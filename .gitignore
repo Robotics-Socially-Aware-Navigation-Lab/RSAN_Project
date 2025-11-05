@@ -1,0 +1,10 @@
+datasets/raw/
+datasets/processed/
+datasets/yolo_ready/images/
+datasets/yolo_ready/labels/
+models/*.pt
+results/
+__pycache__/
+*.ipynb_checkpoints/
+*.log
+.DS_Store

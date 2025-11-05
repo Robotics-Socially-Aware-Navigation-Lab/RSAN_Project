@@ -1,0 +1,2 @@
+dataset_focus: "indoor"
+classes: ["chair","bed","couch","tv","potted plant","dining table","toilet","oven","sink","laptop"]

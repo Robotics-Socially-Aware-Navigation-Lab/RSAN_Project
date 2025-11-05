@@ -1,0 +1,7 @@
+<package format="3">
+  <name>san_node</name>
+  <version>0.1.0</version>
+  <description>Socially Aware Navigation node</description>
+  <maintainer email="you@example.com">Rolando Yax</maintainer>
+  <license>MIT</license>
+</package>

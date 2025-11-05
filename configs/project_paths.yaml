@@ -1,0 +1,4 @@
+project_dir: "/content/drive/MyDrive/SAN_Project"
+dataset_dir: "datasets/yolo_ready"
+model_dir: "models/yolov9_finetuned.pt"
+log_dir: "results/logs"
