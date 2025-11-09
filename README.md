@@ -1,95 +1,88 @@
-# SAN_Project — Robot Production Pipeline
+# Welcome to the Robotics Socially Aware Navigation Lab (RSAN Lab)
 
-The **SAN_Project** is a research-grade robotic intelligence system developed at the **Robotics Socially Aware Navigation Lab (RSAN Lab)**, *Sonoma State University (CS470)*.  
-It integrates **computer vision (YOLOv9)**, **LLM reasoning (ChatGPT-Vision)**, and **ROS2 navigation** into a unified pipeline that enables robots to understand, interpret, and navigate socially aware environments.
+This organization was established to facilitate research and development in **socially aware robotic navigation**, combining **computer vision**, **machine learning**, and **robotic reasoning** to create context-aware autonomous systems.
 
----
+The **RSAN_Project** is the flagship system developed for **CS470: Advanced Software Design Project** at **Sonoma State University**.  
+This project represents a collaborative effort by a multidisciplinary team focused on the intersection of **AI perception**, **Large Language Models (LLMs)**, and **robotic navigation** using **ROS2**.  
 
-## Overview
-
-This project demonstrates the full **Robot Production Pipeline**, from **data collection** to **real-world robot deployment**.
-
-<p align="center">
-  <img src="docs/architecture_diagram.png" alt="SAN Project Pipeline" width="700">
-</p>
-
-Each stage of the pipeline is modular, allowing researchers to retrain, test, and integrate new AI or robotics components with minimal reconfiguration.
+Through a modular, research-driven design, the system integrates perception, reasoning, and navigation to enable robots to interpret human-centric environments and respond appropriately.  
+This work exemplifies advanced concepts in **object detection, scene understanding, contextual inference, and behavior-based robotics**.
 
 ---
 
-## Pipeline Stages
+## System Overview
 
-### 1. Data Collection & Cleaning
-- Gathers raw image datasets (e.g., **COCO**, **SUN RGB-D**).  
-- Cleans, normalizes, and augments data for consistent YOLO-ready format.  
-- **Implemented in:**  
-  - `colab/preprocess_data.ipynb`  
-  - `src/perception/preprocess_data.py`
+The SAN_Project Robot Production Pipeline is composed of interconnected modules, each serving a distinct purpose in the overall robot intelligence framework.
 
- *Why:* Preprocessing ensures balanced, high-quality inputs for model training and reduces noise in object detection performance.
+1. **Data Collection & Cleaning**  
+   - Gathers and refines real-world or simulated datasets (COCO, SUN RGB-D).  
+   - Processes image data to remove noise and ensure balanced training samples.  
+   - Implemented in:  
+     - `colab/preprocess_data.ipynb`  
+     - `src/perception/preprocess_data.py`
 
----
+2. **Model Training (YOLOv9)**  
+   - Fine-tunes YOLOv9 on custom datasets for human-object interaction recognition.  
+   - Integrates social cues into object detection for contextual awareness.  
+   - Implemented in:  
+     - `colab/train_yolov9.ipynb`  
+     - `src/perception/train_yolo.py`
 
-### 2. Model Training (YOLOv9)
-- Trains or fine-tunes YOLOv9 for **object detection** and **social scene understanding**.  
-- Supports human-object interaction datasets.  
-- **Implemented in:**  
-  - `colab/train_yolov9.ipynb`  
-  - `src/perception/train_yolo.py`
+3. **Visual Perception & Detection**  
+   - Runs trained models to detect people, objects, and obstacles in the environment.  
+   - Supports both static images and video streams for real-time inference.  
+   - Implemented in:  
+     - `src/perception/detect_objects.py`
 
-📈 *Why:* This step produces the robot’s perception model — its “eyes.”  
-Fine-tuned weights are stored in:  
-`models/yolov9_finetuned.pt`
+4. **LLM-Based Reasoning (ChatGPT-Vision Integration)**  
+   - Uses GPT models for scene interpretation and semantic reasoning.  
+   - Converts visual detections into natural language context for decision-making.  
+   - Implemented in:  
+     - `src/reasoning/llm_reasoner.py`  
+     - `src/reasoning/rule_engine.py`
 
----
+5. **Navigation & Behavior Control (ROS2 Integration)**  
+   - Translates high-level reasoning into low-level motion commands.  
+   - Uses ROS2 topics to manage path planning and robot movement.  
+   - Implemented in:  
+     - `src/navigation/ros2_interface.py`  
+     - `src/navigation/san_behavior.py`
 
-### 3. Detection & Validation
-- Loads the trained YOLO model for image or video inference.  
-- Validates detections using FiftyOne or OpenCV visualization.  
-- **Implemented in:**  
-  - `colab/detect_yolov9.ipynb`  
-  - `src/perception/detect_objects.py`
-
-*Why:* Ensures the model performs correctly before integration into reasoning and navigation.
-
----
-
-### 4. Reasoning (LLM + Rules)
-- Combines YOLO detections with **language-based reasoning (ChatGPT-Vision)**.  
-- Interprets scene semantics (“A person standing near a chair” → “occupied area”).  
-- Logical decision-making handled via a **Rule Engine**.  
-- **Implemented in:**  
-  - `src/reasoning/llm_reasoner.py`  
-  - `src/reasoning/rule_engine.py`
-
-*Why:* This forms the “brain” — converting perception into semantic understanding for decision-making.
+6. **Evaluation & Documentation**  
+   - Tracks model performance and robot behavior metrics.  
+   - Produces reports, visualizations, and reproducible results.  
+   - Implemented in:  
+     - `docs/model_training.md`  
+     - `results/logs/`  
 
 ---
 
-### 5. Navigation & Deployment (ROS2)
-- Interfaces with **ROS2 (Humble)** for real-world robot deployment.  
-- Translates reasoning outputs into motion commands.  
-- Includes behavior scripts for autonomous decision-making.  
-- **Implemented in:**  
-  - `src/navigation/ros2_interface.py`  
-  - `src/navigation/san_behavior.py`  
-  - `ros_ws/src/san_node/san_node.py`
+## Research Motivation
 
-*Why:* Connects AI reasoning to robot motion — enabling context-aware navigation.
+Modern robotics must extend beyond navigation — it must understand and adapt to **social contexts**.  
+The **RSAN_Project** explores the fusion of **visual perception** and **language-based reasoning** to empower robots to:
 
----
+- Recognize people, gestures, and environments  
+- Understand contextual meaning in scenes  
+- Navigate safely and respectfully in human spaces  
 
-### 6. Evaluation & Documentation
-- Logs model performance, reasoning outcomes, and ROS2 control responses.  
-- Generates research-ready figures and markdown documentation.  
-- **Implemented in:**  
-  - `results/logs/`  
-  - `docs/model_training.md`  
-  - `docs/data_preparation.md`
-
-*Why:* Enables reproducible experiments and data-driven improvement tracking.
+This layered design mirrors how humans combine **sight, reasoning, and decision-making** — a key step toward socially intelligent autonomous systems.
 
 ---
 
-## Directory Structure
+## Technologies and Frameworks
+
+| Domain | Tool / Framework | Purpose |
+|--------|------------------|----------|
+| Computer Vision | **YOLOv9 / OpenCV** | Object detection and real-time inference |
+| Dataset Management | **FiftyOne / Albumentations** | Data cleaning, augmentation, and visualization |
+| Reasoning | **ChatGPT-Vision / LangChain** | Semantic interpretation of detected scenes |
+| Robotics | **ROS2 (Humble)** | Real-world control and sensor integration |
+| ML Workflow | **Python, PyTorch, Jupyter, Colab** | Model training and experimentation |
+
+---
+
+## Project Architecture
+
+## Project Contributors 
 
