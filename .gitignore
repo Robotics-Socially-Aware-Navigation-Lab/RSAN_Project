@@ -1,10 +1,113 @@
+# SAN_Project .gitignore
+# Purpose: Keep repository secure, light, and reproducible
+
+
+# Python / Virtual Environments 
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.egg-info/
+.env
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Jupyter / Colab Artifacts
+*.ipynb_checkpoints
+*.ipynb_save
+*.ipynb_convert
+*.ipynb_tmp
+*.ipynb~
+*checkpoint.ipynb
+
+# Logs & Temporary Files
+logs/
+*.log
+*.out
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Datasets (too large for git) 
 datasets/raw/
 datasets/processed/
 datasets/yolo_ready/images/
 datasets/yolo_ready/labels/
+datasets/yolo_ready/*.zip
+datasets/**/*.jpg
+datasets/**/*.png
+datasets/**/*.json
+
+# Keep structure, but ignore heavy data files
+!datasets/README.md
+!datasets/yolo_ready/data.yaml
+
+# Model Weights 
 models/*.pt
-results/
-__pycache__/
-*.ipynb_checkpoints/
-*.log
+models/*.pth
+models/*.onnx
+models/*.engine
+models/*.weights
+models/*.ckpt
+
+# Keep placeholder structure
+!models/README.md
+
+# Results & Outputs
+results/detections/
+results/logs/
+results/**/*.jpg
+results/**/*.txt
+results/**/*.json
+results/**/*.csv
+results/**/*.png
+
+# Keep empty directory placeholders
+!results/README.md
+
+# ROS2 Build and Logs
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/
+ros_ws/*.db3
+
+# OpenAI and API Credentials
+openai_api_key.txt
+*.env
+.env.*
+*.json
+*.yaml.backup
+*.secret
+*.key
+api_keys/
+
+# Conda / Pip Environment Files (optional)
+*.lock
+*.yaml~
+*.bak
+
+# IDE / OS Files
+.vscode/
+.idea/
+*.swp
 .DS_Store
+*.code-workspace
+
+# Archive / Backup Files
+*.zip
+*.tar.gz
+*.tar
+*.7z
+*.gz
+*.rar
+
+# Temporary or Cached Runs
+wandb/
+runs/
+.cache/
+.temp/
+tmp/

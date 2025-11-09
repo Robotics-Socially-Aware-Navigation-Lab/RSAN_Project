@@ -2,3 +2,20 @@ project_dir: "/content/drive/MyDrive/SAN_Project"
 dataset_dir: "datasets/yolo_ready"
 model_dir: "models/yolov9_finetuned.pt"
 log_dir: "results/logs"
+
+
+# SAN_Project Directory Configuration
+# Purpose:
+# Centralized configuration for file paths used throughout the project.
+# This keeps all data, models, and logs in a consistent structure.
+
+paths:
+  raw_data: datasets/raw               # Original unmodified datasets (e.g., COCO, SUN RGB-D)
+  processed_data: datasets/processed   # Cleaned or augmented datasets
+  yolo_ready: datasets/yolo_ready      # Training-ready YOLO data (images + labels)
+  models: models                       # Folder to save trained or fine-tuned models
+  results: results                     # All inference outputs and evaluation results
+  logs: results/logs                   # Text-based logs for debugging and training records
+  detections: results/detections       # YOLOv9 output predictions (images, JSON, etc.)
+  configs: configs                     # All configuration files (like this one)
+  docs: docs                           # Documentation, diagrams, and markdown reports
