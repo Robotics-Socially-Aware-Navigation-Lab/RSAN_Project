@@ -14,6 +14,11 @@ __pycache__/
 venv/
 env/
 .ipynb_checkpoints/
+__pycache__/
+
+# Ignore all virtualenv caches
+pip-wheel-metadata/
+.python-version
 
 # Jupyter / Colab Artifacts
 *.ipynb_checkpoints
@@ -22,6 +27,8 @@ env/
 *.ipynb_tmp
 *.ipynb~
 *checkpoint.ipynb
+*.ipynb_checkpoints/
+.colab-cache/
 
 # Logs & Temporary Files
 logs/
@@ -31,6 +38,9 @@ logs/
 *.bak
 .DS_Store
 Thumbs.db
+.cache/
+.temp/
+tmp/
 
 # Datasets (too large for git) 
 datasets/raw/
@@ -41,6 +51,8 @@ datasets/yolo_ready/*.zip
 datasets/**/*.jpg
 datasets/**/*.png
 datasets/**/*.json
+datasets/**/*.npy
+datasets/**/*.csv
 
 # Keep structure, but ignore heavy data files
 !datasets/README.md
@@ -53,6 +65,9 @@ models/*.onnx
 models/*.engine
 models/*.weights
 models/*.ckpt
+models/**/*.bin
+models/**/*.tflite
+models/**/*.trt
 
 # Keep placeholder structure
 !models/README.md
@@ -65,6 +80,8 @@ results/**/*.txt
 results/**/*.json
 results/**/*.csv
 results/**/*.png
+wandb/
+runs/
 
 # Keep empty directory placeholders
 !results/README.md
@@ -74,6 +91,8 @@ ros_ws/build/
 ros_ws/install/
 ros_ws/log/
 ros_ws/*.db3
+ros_ws/**/*.pyc
+ros_ws/**/__pycache__/
 
 # OpenAI and API Credentials
 openai_api_key.txt
@@ -84,11 +103,17 @@ openai_api_key.txt
 *.secret
 *.key
 api_keys/
+credentials/
+secrets/
+private_configs/
 
 # Conda / Pip Environment Files (optional)
 *.lock
 *.yaml~
 *.bak
+poetry.lock
+Pipfile.lock
+*.whl
 
 # IDE / OS Files
 .vscode/
@@ -96,6 +121,8 @@ api_keys/
 *.swp
 .DS_Store
 *.code-workspace
+*.sublime-project
+*.sublime-workspace
 
 # Archive / Backup Files
 *.zip
@@ -111,3 +138,18 @@ runs/
 .cache/
 .temp/
 tmp/
+
+# Lint / Format Caches
+# ------------------------------------------------------------
+.mypy_cache/
+.pytest_cache/
+coverage.xml
+htmlcov/
+.cache/
+black.log
+isort.log
+flake8.log
+
+# CI/CD or Automation Artifacts
+.github/workflows/__pycache__/
+.github/*.log
