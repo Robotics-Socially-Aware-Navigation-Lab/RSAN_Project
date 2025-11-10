@@ -2,8 +2,8 @@
 
 This organization was established to facilitate research and development in **socially aware robotic navigation**, combining **computer vision**, **machine learning**, and **robotic reasoning** to create context-aware autonomous systems.
 
-The **RSAN_Project** is the flagship system developed for **CS470: Advanced Software Design Project** at **Sonoma State University**.  
-This project represents a collaborative effort by a multidisciplinary team focused on the intersection of **AI perception**, **Large Language Models (LLMs)**, and **robotic navigation** using **ROS2**.  
+The **RSAN_Project** is a research-driven system developed for **CS470: Advanced Software Design Project** at **Sonoma State University**.  
+It integrates **AI perception**, **Large Language Models (LLMs)**, and **robotic navigation** using **ROS2** to enable socially aware and intelligent robot behavior.
 
 Through a modular, research-driven design, the system integrates perception, reasoning, and navigation to enable robots to interpret human-centric environments and respond appropriately.  
 This work exemplifies advanced concepts in **object detection, scene understanding, contextual inference, and behavior-based robotics**.
@@ -85,4 +85,5 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 ## Project Architecture
 
 ## Project Contributors 
+
 
