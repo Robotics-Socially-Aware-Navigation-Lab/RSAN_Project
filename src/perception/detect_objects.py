@@ -13,10 +13,13 @@ Why:
     - Provides detection data for reasoning and evaluation
 """
 
-from utils.file_utils import load_paths, ensure_dirs
-from utils.logger import setup_logger
-from ultralytics import YOLO
 from pathlib import Path
+
+from ultralytics import YOLO
+
+from utils.file_utils import ensure_dirs, load_paths
+from utils.logger import setup_logger
+
 
 def run_detection(input_folder="datasets/yolo_ready/images/val"):
     paths = load_paths()
@@ -31,15 +34,11 @@ def run_detection(input_folder="datasets/yolo_ready/images/val"):
     model = YOLO(str(model_path))
 
     model.predict(
-        source=input_folder,
-        save=True,
-        save_txt=True,
-        project=str(output_dir),
-        name="detections",
-        exist_ok=True
+        source=input_folder, save=True, save_txt=True, project=str(output_dir), name="detections", exist_ok=True
     )
 
     logger.info(f"Detections saved in {output_dir}")
+
 
 if __name__ == "__main__":
     run_detection()

@@ -38,10 +38,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+
 def setup_logger(log_dir="results/logs", name="san_project"):
     """WHAT: Configure and return a logger instance.
-       HOW: Creates file and stream handlers to write logs to both console and file.
-       WHY: So every training or preprocessing run is timestamped and traceable."""
+    HOW: Creates file and stream handlers to write logs to both console and file.
+    WHY: So every training or preprocessing run is timestamped and traceable."""
 
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     log_file = Path(log_dir) / f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
@@ -49,9 +50,6 @@ def setup_logger(log_dir="results/logs", name="san_project"):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler(log_file),  # writes to file
-            logging.StreamHandler()         # prints to terminal
-        ]
+        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],  # writes to file  # prints to terminal
     )
     return logging.getLogger(name)

@@ -16,6 +16,7 @@ Why:
 
 from utils.logger import setup_logger
 
+
 def apply_rules(reasoning_text):
     logger = setup_logger(name="rule_engine")
 

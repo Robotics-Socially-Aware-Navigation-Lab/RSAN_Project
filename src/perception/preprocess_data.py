@@ -44,10 +44,12 @@ Why:
     - To ensure clean, well-structured, and reproducible training data
 """
 
-from utils.file_utils import load_paths, ensure_dirs
-from utils.logger import setup_logger
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+from utils.file_utils import ensure_dirs, load_paths
+from utils.logger import setup_logger
+
 
 def preprocess_dataset():
     paths = load_paths()
@@ -65,6 +67,7 @@ def preprocess_dataset():
         shutil.copy(p, yolo_path / "images/train")
 
     logger.info(f"Preprocessing complete. YOLO-ready data stored in: {yolo_path}")
+
 
 if __name__ == "__main__":
     preprocess_dataset()

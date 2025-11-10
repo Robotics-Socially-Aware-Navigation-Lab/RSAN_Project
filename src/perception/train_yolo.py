@@ -12,10 +12,13 @@ Why:
     - Automates model training and ensures reproducibility across team members
 """
 
+from pathlib import Path
+
+from ultralytics import YOLO
+
 from utils.file_utils import load_paths
 from utils.logger import setup_logger
-from ultralytics import YOLO
-from pathlib import Path
+
 
 def train_yolo():
     paths = load_paths()
@@ -28,15 +31,11 @@ def train_yolo():
     model = YOLO("yolov9.pt")  # Base model
 
     model.train(
-        data=str(data_yaml),
-        epochs=50,
-        imgsz=640,
-        project=str(model_dir),
-        name="yolov9_finetuned",
-        exist_ok=True
+        data=str(data_yaml), epochs=50, imgsz=640, project=str(model_dir), name="yolov9_finetuned", exist_ok=True
     )
 
     logger.info("YOLOv9 fine-tuning complete. Model saved in /models/")
+
 
 if __name__ == "__main__":
     train_yolo()

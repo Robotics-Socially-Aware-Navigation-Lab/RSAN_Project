@@ -15,10 +15,14 @@ Why:
     - Bridges perception → cognition → decision-making for robots
 """
 
-import os, json
+import json
+import os
+
 from openai import OpenAI
+
 from utils.file_utils import load_paths
 from utils.logger import setup_logger
+
 
 def llm_reason():
     paths = load_paths()
@@ -33,10 +37,7 @@ def llm_reason():
 
     # Connect to OpenAI
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}])
 
     reasoning_output = response.choices[0].message.content
     logger.info(f"LLM Reasoning Output:\n{reasoning_output}")
@@ -45,6 +46,7 @@ def llm_reason():
     output_path = paths["results"] / "reasoning_output.txt"
     with open(output_path, "w") as f:
         f.write(reasoning_output)
+
 
 if __name__ == "__main__":
     llm_reason()

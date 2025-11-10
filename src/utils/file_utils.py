@@ -43,40 +43,48 @@ Why:
     - Keeps file structure portable between Colab, local, and ROS environments
 """
 
-import yaml, os, json
+import json
+import os
 from pathlib import Path
+
+import yaml
+
 
 def load_yaml(yaml_path):
     """WHAT: Load YAML file into Python dict.
-       HOW: Uses safe YAML loader.
-       WHY: Central way to access configuration files."""
+    HOW: Uses safe YAML loader.
+    WHY: Central way to access configuration files."""
     with open(yaml_path, 'r') as f:
         return yaml.safe_load(f)
 
+
 def load_paths(config_path='configs/project_paths.yaml'):
     """WHAT: Load project directory structure as a dictionary.
-       HOW: Reads from project_paths.yaml.
-       WHY: Makes file locations dynamic and consistent."""
+    HOW: Reads from project_paths.yaml.
+    WHY: Makes file locations dynamic and consistent."""
     cfg = load_yaml(config_path)
     return {k: Path(v) for k, v in cfg['paths'].items()}
 
+
 def ensure_dirs(paths):
     """WHAT: Create directories if they don't exist.
-       HOW: Loops through dictionary of Path objects and creates them.
-       WHY: Prevents file-not-found errors during data writes."""
+    HOW: Loops through dictionary of Path objects and creates them.
+    WHY: Prevents file-not-found errors during data writes."""
     for p in paths.values():
         os.makedirs(p, exist_ok=True)
 
+
 def save_json(data, path):
     """WHAT: Save Python dict as a JSON file.
-       HOW: Opens file in write mode and dumps formatted JSON.
-       WHY: Standard format for detection results or metadata."""
+    HOW: Opens file in write mode and dumps formatted JSON.
+    WHY: Standard format for detection results or metadata."""
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
 
+
 def load_json(path):
     """WHAT: Load data from a JSON file.
-       HOW: Reads and parses JSON into a Python object.
-       WHY: To reuse saved metadata, detections, or reasoning output."""
+    HOW: Reads and parses JSON into a Python object.
+    WHY: To reuse saved metadata, detections, or reasoning output."""
     with open(path, 'r') as f:
         return json.load(f)
