@@ -85,10 +85,50 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 ## Project Architecture
 Project architecture here later 
 
+## Installation & Setup Guide
+
+To ensure all team members can reproduce the same environment on **Mac, Linux, or Windows**, follow one of the setup methods below.
+
+---
+
+### For Mac / Linux Users
+```bash
+# Clone the repository
+git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
+cd RSAN_Project
+
+# Make the setup script executable
+chmod +x setup.sh
+
+# Run setup
+bash setup.sh
+
+# Activate virtual environment
+source env/bin/activate
+
+# To deactivate
+deactivate
+
+### For Windows
+# Clone the repository
+git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
+cd RSAN_Project
+
+# Run setup
+setup.bat
+
+# Activate virtual environment
+call env\Scripts\activate
+
+# To deactivate
+deactivate
+
+
 ## Project Contributors 
 - Rolando Yax 
 - Kyle Garrity
 - Jonathan Ramirez
 - Gurkirat Sandhu 
+
 
 
