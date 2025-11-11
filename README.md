@@ -122,17 +122,3 @@ call env\Scripts\activate
 
 # To deactivate
 deactivate
-
----
-
-## Project Contributors
-
-Modern robotics research is a collaborative effort.  
-The following contributors played key roles in the development of the **RSAN_Project**:
-
-- Rolando Yax 
-- Kyle Garrity
-- Jonathan Ramirez
-- Gurkirat Sandhu
-
----
