@@ -85,13 +85,20 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 ## Project Architecture
 Project architecture here later 
 
+---
+
 ## Installation & Setup Guide
 
 To ensure all team members can reproduce the same environment on **Mac, Linux, or Windows**, follow one of the setup methods below.
 
 ---
 
-### For Mac / Linux / Windows Users
+### Recommended: Smart Environment Setup (Automatic)
+
+This is the **preferred method** for all contributors.  
+It automatically detects whether **Conda** is available and uses it for environment creation.  
+If Conda isn’t found, it safely falls back to a **Python virtual environment (venv)**.
+
 ```bash
 # Clone the repository
 git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
@@ -100,25 +107,50 @@ cd RSAN_Project
 # Make the setup script executable
 chmod +x setup.sh
 
-# Run setup
+# Run the smart setup (auto-detects Conda or Python venv)
 bash setup.sh
 
-# Activate virtual environment
-source env/bin/activate
+### For Mac / Linux Users (Manual Setup)
 
-# To deactivate
-deactivate
-
-### For Windows
 # Clone the repository
 git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
 cd RSAN_Project
 
-# Run setup
+# Create environment from YAML
+conda env create -f environment.yml
+
+# Activate environment
+conda activate rsan_env
+
+# (Optional) Sync dependencies for pip users
+pip freeze > requirements.txt
+
+## For Windows Users
+
+# Clone the repository
+git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
+cd RSAN_Project
+
+# Run setup (automatically configures the environment)
 setup.bat
 
-# Activate virtual environment
+# Activate environment
 call env\Scripts\activate
 
 # To deactivate
+deactivate
+
+## After Installation
+
+# Activate (Mac/Linux)
+conda activate rsan_env
+# or 
+source env/bin/activate
+
+# for Window
+call env\Scripts\activat
+
+# Deactivate
+conda deactivate
+# or
 deactivate
