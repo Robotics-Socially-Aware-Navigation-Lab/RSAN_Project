@@ -1,1 +1,61 @@
+# ===============================================
+# RSAN_Project - Git Attributes Configuration
+# Ensures consistent behavior across Mac, Linux, and Windows
+# ===============================================
+
+# --- Text File Normalization ---
+# Auto-detect text files and normalize line endings to LF
+* text=auto eol=lf
+
+# --- Jupyter Notebooks ---
+# Ensure GitHub correctly identifies .ipynb files
 *.ipynb linguist-language=Jupyter Notebook
+*.ipynb text merge=union
+
+# --- Python Scripts ---
+*.py text diff=python
+
+# --- YAML, Markdown, Config Files ---
+*.yml text
+*.yaml text
+*.md text
+*.toml text
+*.json text
+*.ini text
+*.cfg text
+
+# --- Shell and Batch Scripts ---
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# --- Image and Binary Files (do not normalize) ---
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.pkl binary
+*.pt binary
+*.onnx binary
+*.weights binary
+
+# --- Dataset and Log Files ---
+*.zip binary
+*.tar binary
+*.tar.gz binary
+*.csv text
+*.log text
+
+# --- ROS2 and Simulation Files ---
+*.launch.xml text
+*.urdf text
+*.sdf text
+*.xacro text
+*.world text
+
+# --- Prevent Git from messing with model checkpoints or binary blobs ---
+models/* binary
+datasets/raw/* binary
+datasets/yolo_ready/images/* binary
+datasets/yolo_ready/labels/* binary
