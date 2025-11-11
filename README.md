@@ -91,7 +91,7 @@ To ensure all team members can reproduce the same environment on **Mac, Linux, o
 
 ---
 
-### For Mac / Linux Users
+### For Mac / Linux / Windows Users
 ```bash
 # Clone the repository
 git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
@@ -123,13 +123,10 @@ call env\Scripts\activate
 # To deactivate
 deactivate
 
----
+
 
 ## Project Contributors 
 - Rolando Yax 
 - Kyle Garrity
 - Jonathan Ramirez
 - Gurkirat Sandhu 
-
-
-
