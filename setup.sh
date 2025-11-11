@@ -44,7 +44,7 @@ pip install --upgrade pip
 
 # Step 5: Install dependencies
 if [ -f "requirements.txt" ]; then
-    echo "📦 Installing project dependencies..."
+    echo "Installing project dependencies..."
     pip install -r requirements.txt
 else
     echo "requirements.txt not found! Skipping dependency installation."
@@ -74,4 +74,4 @@ echo "---------------------------------------------------"
 echo "Next steps:"
 echo "1️⃣ Run the project notebooks in 'colab/' or scripts in 'src/'"
 echo "2️⃣ Use GitHub Actions for automated linting and formatting"
-echo "3️⃣ Have fun building socially aware robots 🤖"
+echo "3️⃣ Have fun building socially aware robots "
