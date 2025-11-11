@@ -123,10 +123,10 @@ call env\Scripts\activate
 # To deactivate
 deactivate
 
-
+---
 
 ## Project Contributors 
 - Rolando Yax 
 - Kyle Garrity
 - Jonathan Ramirez
-- Gurkirat Sandhu 
+- Gurkirat Sandhu
