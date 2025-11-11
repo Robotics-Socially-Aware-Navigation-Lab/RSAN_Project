@@ -86,9 +86,9 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 Project architecture here later 
 
 ## Project Contributors 
-Rolando Yax 
-Kyle Garrity
-Jonathan Ramirez
-Gurkirat Sandhu 
+- Rolando Yax 
+- Kyle Garrity
+- Jonathan Ramirez
+- Gurkirat Sandhu 
 
 
