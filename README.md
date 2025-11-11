@@ -15,17 +15,17 @@ This work exemplifies advanced concepts in **object detection, scene understandi
 The SAN_Project Robot Production Pipeline is composed of interconnected modules, each serving a distinct purpose in the overall robot intelligence framework.
 
 1. **Data Collection & Cleaning**  
-   - Gathers and refines real-world or simulated datasets (COCO, SUN RGB-D).  
+   - Gathers and refines real-world or simulated datasets (COC0).  
    - Processes image data to remove noise and ensure balanced training samples.  
    - Implemented in:  
      - `colab/preprocess_data.ipynb`  
      - `src/perception/preprocess_data.py`
 
-2. **Model Training (YOLOv9)**  
-   - Fine-tunes YOLOv9 on custom datasets for human-object interaction recognition.  
+2. **Model Training (YOLOv8)**  
+   - Fine-tunes YOLOv8 on custom datasets for human-object interaction recognition.  
    - Integrates social cues into object detection for contextual awareness.  
    - Implemented in:  
-     - `colab/train_yolov9.ipynb`  
+     - `colab/train_yolov8.ipynb`  
      - `src/perception/train_yolo.py`
 
 3. **Visual Perception & Detection**  
@@ -74,7 +74,7 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 
 | Domain | Tool / Framework | Purpose |
 |--------|------------------|----------|
-| Computer Vision | **YOLOv9 / OpenCV** | Object detection and real-time inference |
+| Computer Vision | **YOLOv8 / OpenCV** | Object detection and real-time inference |
 | Dataset Management | **FiftyOne / Albumentations** | Data cleaning, augmentation, and visualization |
 | Reasoning | **ChatGPT-Vision / LangChain** | Semantic interpretation of detected scenes |
 | Robotics | **ROS2 (Humble)** | Real-world control and sensor integration |
@@ -83,7 +83,12 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 ---
 
 ## Project Architecture
+Project architecture here later 
 
 ## Project Contributors 
+Rolando Yax 
+Kyle Garrity
+Jonathan Ramirez
+Gurkirat Sandhu 
 
 
