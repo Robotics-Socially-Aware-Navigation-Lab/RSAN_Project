@@ -123,7 +123,11 @@ conda env create -f environment.yml
 conda activate rsan_env
 
 # (Optional) Sync dependencies for pip users
+# Update pip environment
 pip freeze > requirements.txt
+
+# Update conda environment
+conda env export > environment.yml
 
 ## For Windows Users
 

@@ -78,7 +78,7 @@ dependencies:
       - lazy-loader==0.4
       - markdown-it-py==4.0.0
       - markupsafe==3.0.3
-      - matplotlib==3.9.2
+      - matplotlib==3.10.7
       - mccabe==0.7.0
       - mdurl==0.1.2
       - mongoengine==0.29.1
@@ -88,8 +88,8 @@ dependencies:
       - mypy-extensions==1.1.0
       - narwhals==2.11.0
       - networkx==3.4.2
-      - numpy==1.26.4
-      - opencv-python==4.10.0.84
+      - numpy==2.2.6
+      - opencv-python==4.12.0.88
       - opencv-python-headless==4.11.0.86
       - packaging==25.0
       - pandas==2.2.3
@@ -98,6 +98,8 @@ dependencies:
       - pillow==10.4.0
       - platformdirs==4.5.0
       - plotly==6.4.0
+      - polars==1.35.2
+      - polars-runtime-32==1.35.2
       - pprintpp==0.4.0
       - priority==2.0.0
       - py7zr==1.0.0
@@ -136,20 +138,22 @@ dependencies:
       - sseclient-py==1.8.0
       - starlette==0.50.0
       - strawberry-graphql==0.278.0
-      - sympy==1.13.1
+      - sympy==1.14.0
       - tabulate==0.9.0
       - taskgroup==0.2.2
       - texttable==1.7.0
       - threadpoolctl==3.6.0
       - tifffile==2025.5.10
       - tomli==2.3.0
-      - torch==2.5.1
+      - torch==2.9.1
       - torchaudio==2.5.1
-      - torchvision==0.20.1
+      - torchvision==0.24.1
       - tqdm==4.66.5
       - typing-extensions==4.12.2
       - tzdata==2025.2
       - tzlocal==5.3.1
+      - ultralytics==8.3.228
+      - ultralytics-thop==2.0.18
       - universal-analytics-python3==1.1.1
       - urllib3==2.5.0
       - voxel51-eta==0.15.1
@@ -157,3 +161,4 @@ dependencies:
       - wrapt==2.0.1
       - wsproto==1.2.0
       - xmltodict==1.0.2
+
