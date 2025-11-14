@@ -1,0 +1,39 @@
+# ============================
+# Ruff Configuration for RSAN
+# Google + PyTorch Python Style
+# ============================
+
+# Lint everything except notebooks
+exclude = [
+    "colab/*.ipynb",
+    "*.ipynb",
+    "__pycache__",
+]
+
+# Python version
+target-version = "py310"
+
+# Enable all important rule sets
+select = [
+    "E",   # Pyflakes (errors)
+    "F",   # Pyflakes (unused imports, variables)
+    "W",   # Warnings
+    "I",   # Import sorting
+    "N",   # Naming conventions
+    "UP",  # Python upgrade suggestions
+    "B",   # Bugbear (common bug patterns)
+    "SIM", # Simplify code
+    "C4",  # Comprehensions
+    "ERA", # Remove commented out code
+]
+
+# Auto-fix safe rules (ruff fix)
+fix = true
+
+# Line length (Google uses 88, PyTorch uses 120)
+line-length = 100
+
+# Import sorting style
+[tool.ruff.isort]
+combine-as-imports = true
+force-single-line = false

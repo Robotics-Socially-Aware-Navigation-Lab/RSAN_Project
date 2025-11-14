@@ -29,14 +29,10 @@ class SceneContextEngine:
             "scene": classification["scene"],
             "scene_confidence": classification["confidence"],
             "object_detections": detections,
-            "probabilities": classification["all_scores"]
+            "probabilities": classification["all_scores"],
         }
 
         # Step 4 — LLM reasoning
         reasoning = self.llm.generate_reasoning(context)
 
-        return {
-            "classification": classification,
-            "detections": detections,
-            "reasoning": reasoning
-        }
+        return {"classification": classification, "detections": detections, "reasoning": reasoning}

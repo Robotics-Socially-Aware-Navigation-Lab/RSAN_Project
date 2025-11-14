@@ -46,13 +46,6 @@ class IndoorSceneClassifier:
         confidence = float(result.probs.top1conf)
 
         # Convert all probabilities to dictionary
-        prob_dict = {
-            self.labels[i]: float(result.probs.data[i])
-            for i in range(len(self.labels))
-        }
+        prob_dict = {self.labels[i]: float(result.probs.data[i]) for i in range(len(self.labels))}
 
-        return {
-            "scene": label,
-            "confidence": confidence,
-            "all_scores": prob_dict
-        }
+        return {"scene": label, "confidence": confidence, "all_scores": prob_dict}
