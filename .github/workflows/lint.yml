@@ -9,16 +9,22 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      - name: Install dependencies
-        run: pip install black isort flake8
-      - name: Run formatters and linter
-        run: |
-          black --check src/
-          isort --check-only src/
-          flake8 src/
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        pip install black ruff
+
+    - name: Run Black (check only)
+      run: black --check .
+
+    - name: Run Ruff
+      run: ruff check .

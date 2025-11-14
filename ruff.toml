@@ -1,0 +1,31 @@
+# ============================
+# Relaxed Ruff Configuration
+# Allow commented-out code, long lines, prototypes, etc.
+# ============================
+
+exclude = [
+    "colab/*.ipynb",
+    "*.ipynb",
+    "__pycache__",
+]
+
+target-version = "py310"
+
+[lint]
+# Only enforce critical errors & obvious bugs
+select = [
+    "E",   # Serious errors
+    "F",   # Undefined variables / import errors
+]
+
+# Ignore stylistic rules
+ignore = [
+    "ERA001",  # Ignore commented-out code
+    "E501",    # Ignore long lines
+    "SIM101",  # Ignore isinstance suggestions
+    "SIM115",  # Ignore "use context manager" warnings
+]
+
+[lint.isort]
+combine-as-imports = true
+force-single-line = false
