@@ -4,9 +4,10 @@ Indoor Scene Classification using YOLOv8-CLS
 This module wraps the YOLOv8 classification model for use inside RSAN.
 """
 
-from ultralytics import YOLO
-import cv2
 from pathlib import Path
+
+import cv2
+from ultralytics import YOLO
 
 
 class IndoorSceneClassifier:
