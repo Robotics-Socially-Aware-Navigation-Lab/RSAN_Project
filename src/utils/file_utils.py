@@ -54,7 +54,7 @@ def load_yaml(yaml_path):
     """WHAT: Load YAML file into Python dict.
     HOW: Uses safe YAML loader.
     WHY: Central way to access configuration files."""
-    with open(yaml_path, 'r') as f:
+    with open(yaml_path) as f:
         return yaml.safe_load(f)
 
 
@@ -86,5 +86,5 @@ def load_json(path):
     """WHAT: Load data from a JSON file.
     HOW: Reads and parses JSON into a Python object.
     WHY: To reuse saved metadata, detections, or reasoning output."""
-    with open(path, 'r') as f:
+    with open(path) as f:
         return json.load(f)
