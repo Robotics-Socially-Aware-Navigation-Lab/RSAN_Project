@@ -1,155 +1,156 @@
-# SAN_Project .gitignore
-# Purpose: Keep repository secure, light, and reproducible
+# ======================================================================
+# RSAN_Project — Production-Grade .gitignore
+# Purpose: Keep repository secure, light, and reproducible.
+# ======================================================================
 
-
-# Python / Virtual Environments 
+# ----------------------------------------------------------------------
+# PYTHON / ENVIRONMENT
+# ----------------------------------------------------------------------
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.pkl
 *.egg-info/
 .env
+.env.*
 .venv/
 venv/
 env/
-.ipynb_checkpoints/
-__pycache__/
-
-# Ignore all virtualenv caches
 pip-wheel-metadata/
 .python-version
 
-# Jupyter / Colab Artifacts
+# ----------------------------------------------------------------------
+# JUPYTER NOTEBOOK / COLAB
+# ----------------------------------------------------------------------
+.ipynb_checkpoints/
 *.ipynb_checkpoints
 *.ipynb_save
-*.ipynb_convert
 *.ipynb_tmp
 *.ipynb~
-*checkpoint.ipynb
-*.ipynb_checkpoints/
 .colab-cache/
 
-# Logs & Temporary Files
+# ----------------------------------------------------------------------
+# LOGS / TEMP FILES
+# ----------------------------------------------------------------------
 logs/
 *.log
 *.out
 *.tmp
 *.bak
-.DS_Store
-Thumbs.db
 .cache/
 .temp/
 tmp/
+.DS_Store
+Thumbs.db
 
-# Datasets (too large for git) 
-datasets/raw/
-datasets/processed/
-datasets/yolo_ready/images/
-datasets/yolo_ready/labels/
-datasets/yolo_ready/*.zip
+# ----------------------------------------------------------------------
+# SOLID — DATASETS (NEVER PUSH LARGE DATA)
+# ----------------------------------------------------------------------
 datasets/**/*.jpg
 datasets/**/*.png
+datasets/**/*.jpeg
+datasets/**/*.csv
 datasets/**/*.json
 datasets/**/*.npy
-datasets/**/*.csv
+datasets/**/*.npz
+datasets/**/*.zip
 
-# Keep structure, but ignore heavy data files
+# If needed keep only the config describing dataset
 !datasets/README.md
 !datasets/yolo_ready/data.yaml
 
-# Model Weights 
-models/*.pt
-models/*.pth
-models/*.onnx
-models/*.engine
-models/*.weights
-models/*.ckpt
-models/**/*.bin
+# ----------------------------------------------------------------------
+# MODELS (NEVER PUSH WEIGHTS)
+# ----------------------------------------------------------------------
+models/**/*.pt
+models/**/*.pth
+models/**/*.onnx
+models/**/*.engine
+models/**/*.weights
+models/**/*.ckpt
 models/**/*.tflite
 models/**/*.trt
+models/**/*.bin
 
-# Keep placeholder structure
+# Keep a README so students know where to download weights
 !models/README.md
 
-# Results & Outputs
-results/detections/
-results/logs/
-results/**/*.jpg
-results/**/*.txt
-results/**/*.json
-results/**/*.csv
-results/**/*.png
+# ----------------------------------------------------------------------
+# OUTPUTS / GENERATED FILES
+# (Your pipeline writes detections, videos, logs → Do NOT push)
+# ----------------------------------------------------------------------
+outputs/
 wandb/
 runs/
 
-# Keep empty directory placeholders
-!results/README.md
+# Keep folder structure if needed
+!outputs/README.md
 
-# ROS2 Build and Logs
+# ----------------------------------------------------------------------
+# ROS2 BUILD & LOGS
+# ----------------------------------------------------------------------
 ros_ws/build/
 ros_ws/install/
 ros_ws/log/
-ros_ws/*.db3
 ros_ws/**/*.pyc
 ros_ws/**/__pycache__/
+ros_ws/*.db3
 
-# OpenAI and API Credentials
-openai_api_key.txt
-*.env
-.env.*
-*.json
-*.yaml.backup
-*.secret
+# ----------------------------------------------------------------------
+# SECRETS / CREDENTIALS / API KEYS
+# ----------------------------------------------------------------------
 *.key
+*.secret
+*.env
+*.yaml.backup
+openai_api_key.txt
 api_keys/
 credentials/
-secrets/
 private_configs/
 
-# Conda / Pip Environment Files (optional)
+# ----------------------------------------------------------------------
+# PACKAGE MANAGER FILES (OPTIONAL)
+# ----------------------------------------------------------------------
 *.lock
-*.yaml~
 *.bak
 poetry.lock
 Pipfile.lock
 *.whl
 
-# IDE / OS Files
+# ----------------------------------------------------------------------
+# IDE / OS FILES
+# ----------------------------------------------------------------------
 .vscode/
 .idea/
 *.swp
-.DS_Store
-*.code-workspace
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
+.DS_Store
 
-# Archive / Backup Files
+# ----------------------------------------------------------------------
+# ARCHIVES & BACKUPS
+# ----------------------------------------------------------------------
 *.zip
-*.tar.gz
 *.tar
+*.tar.gz
 *.7z
-*.gz
 *.rar
+*.gz
 
-# Temporary or Cached Runs
-wandb/
-runs/
-.cache/
-.temp/
-tmp/
-
-# Lint / Format Caches
-# ------------------------------------------------------------
+# ----------------------------------------------------------------------
+# LINT / TEST / COVERAGE CACHE
+# ----------------------------------------------------------------------
 .mypy_cache/
 .pytest_cache/
 coverage.xml
 htmlcov/
-.cache/
 black.log
 isort.log
 flake8.log
 
-# CI/CD or Automation Artifacts
+# ----------------------------------------------------------------------
+# GITHUB WORKFLOW CACHES
+# ----------------------------------------------------------------------
 .github/workflows/__pycache__/
 .github/*.log

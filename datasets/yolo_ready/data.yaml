@@ -1,0 +1,14 @@
+# Indoor Scene Classification Dataset for YOLOv8-CLS
+
+path: ../indoor_scenes_cls     # base directory of your dataset
+
+train: train
+val: val
+
+names:
+  0: classroom
+  1: hallway
+  2: lab
+  3: office
+
+nc: 4
