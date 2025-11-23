@@ -62,6 +62,7 @@ class Detection:
         confidence: Confidence score in [0, 1].
         bbox_xyxy: Bounding box in (x1, y1, x2, y2) pixel coords.
     """
+
     class_id: int
     class_name: str
     confidence: float
@@ -71,6 +72,7 @@ class Detection:
 # ------------------------------------------------------------
 # Detector class
 # ------------------------------------------------------------
+
 
 class ObjectDetector:
     """
@@ -197,9 +199,7 @@ class ObjectDetector:
 
             if show_label:
                 label = f"{det.class_name} {det.confidence:.2f}"
-                (tw, th), baseline = cv2.getTextSize(
-                    label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
-                )
+                (tw, th), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
                 cv2.rectangle(
                     output,
                     (x1, y1 - th - baseline),
@@ -263,10 +263,9 @@ def detect_objects(
 # CLI / manual testing
 # ------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Run YOLOv8 object detection on an image or webcam."
-    )
+    parser = argparse.ArgumentParser(description="Run YOLOv8 object detection on an image or webcam.")
     parser.add_argument(
         "--source",
         type=str,
@@ -331,9 +330,7 @@ def _run_cli() -> None:
             logger.info("Running detection on image: %s", src_path)
             dets = detector.detect(img)
             for d in dets:
-                logger.info(
-                    "Detected %s (%.2f) at %s", d.class_name, d.confidence, d.bbox_xyxy
-                )
+                logger.info("Detected %s (%.2f) at %s", d.class_name, d.confidence, d.bbox_xyxy)
             vis = detector.draw_detections(img, dets)
             if not args.no_show:
                 cv2.imshow("YOLOv8 Detector", vis)

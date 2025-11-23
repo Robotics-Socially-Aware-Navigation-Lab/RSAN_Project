@@ -54,13 +54,16 @@ def draw_detections(frame, detections):
     for det in detections:
         try:
             x1, y1, x2, y2 = det.bbox_xyxy
-            cv2.rectangle(frame, (x1, y1), (x2, y2),
-                          (0, 255, 0), 2)
-            cv2.putText(frame,
-                        f"{det.class_name} {det.confidence:.2f}",
-                        (x1, max(20, y1 - 10)),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.6, (0, 255, 0), 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(
+                frame,
+                f"{det.class_name} {det.confidence:.2f}",
+                (x1, max(20, y1 - 10)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
+            )
         except Exception as e:
             logger.error(f"Error drawing detection: {e}")
 
