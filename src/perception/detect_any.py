@@ -21,11 +21,12 @@ Fully robust to:
 Author: Senior ML Engineer / Robotics Navigation Specialist
 """
 
-import os
+# import os
 import cv2
 import logging
 from pathlib import Path
-from typing import List
+
+# from typing import List
 from src.perception.detect_utils import run_detection
 
 # ---------------------------------------------------------
