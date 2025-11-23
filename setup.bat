@@ -17,7 +17,7 @@ if %errorlevel%==0 (
 if "%USE_CONDA%"=="true" (
     set ENV_NAME=rsan_env
     echo Checking if Conda environment "%ENV_NAME%" exists...
-    conda env list | findstr "%ENV_NAME%" >nul
+    conda env list | findstr /I "%ENV_NAME%" >nul
     if %errorlevel%==0 (
         echo Environment already exists. Skipping creation.
     ) else (
@@ -32,9 +32,13 @@ if "%USE_CONDA%"=="true" (
     call env\Scripts\activate
     echo Upgrading pip...
     python -m pip install --upgrade pip
+
     if exist requirements.txt (
-        echo Installing dependencies...
+        echo Installing dependencies from requirements.txt...
         pip install -r requirements.txt
+    ) else (
+        echo Installing base dependencies (pip fallback)...
+        pip install ultralytics fiftyone python-dotenv requests pyyaml rich plotly ftfy imageio rtree scikit-learn scikit-image opencv-python pillow pymongo mongoengine motor
     )
 )
 
@@ -49,16 +53,12 @@ print(f"FiftyOne: {fiftyone.__version__}")
 print(f"Numpy: {numpy.__version__}")
 EOF
 
-:: Step 4: Auto-sync environment files (optional)
-if "%USE_CONDA%"=="true" (
-    echo Syncing environment files for RSAN_Project...
-    conda env export > environment.yml
-    pip freeze > requirements.txt
-    echo environment.yml and requirements.txt updated successfully.
-)
-
 echo ==============================================
 echo RSAN_Project environment setup complete!
-echo To activate later: call conda activate rsan_env
+if "%USE_CONDA%"=="true" (
+    echo To activate later: call conda activate rsan_env
+) else (
+    echo To activate later: call env\Scripts\activate
+)
 echo ==============================================
 pause
