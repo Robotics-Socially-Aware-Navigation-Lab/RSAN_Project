@@ -42,6 +42,7 @@ RESULTS_JSON = OUTPUT_ROOT / "results.json"
 
 IMAGE_OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+
 # -------------------------------------------------------------------
 # Utilities
 # -------------------------------------------------------------------

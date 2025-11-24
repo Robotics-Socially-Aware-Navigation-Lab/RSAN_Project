@@ -29,6 +29,7 @@ log = get_logger(__name__)
 @dataclass
 class IndoorClassificationResult:
     """Structured result returned by IndoorClassifier."""
+
     label: str
     confidence: float
     probs: Dict[str, float]

@@ -42,15 +42,11 @@ def _extract_object_names(detections: Any) -> List[str]:
     - list[Results] (we take the first)
     """
     # Already list of strings
-    if isinstance(detections, (list, tuple)) and all(
-        isinstance(x, str) for x in detections
-    ):
+    if isinstance(detections, (list, tuple)) and all(isinstance(x, str) for x in detections):
         return list(detections)
 
     # List of dicts
-    if isinstance(detections, (list, tuple)) and detections and all(
-        isinstance(x, dict) for x in detections
-    ):
+    if isinstance(detections, (list, tuple)) and detections and all(isinstance(x, dict) for x in detections):
         names: List[str] = []
         for d in detections:
             if "label" in d:
@@ -63,9 +59,7 @@ def _extract_object_names(detections: Any) -> List[str]:
     try:
         from ultralytics.yolo.engine.results import Results  # type: ignore
 
-        if isinstance(detections, list) and detections and isinstance(
-            detections[0], Results
-        ):
+        if isinstance(detections, list) and detections and isinstance(detections[0], Results):
             detections = detections[0]
 
         if isinstance(detections, Results):
@@ -113,52 +107,30 @@ def _crowd_multiplier(crowd_level: str) -> float:
     }.get(crowd_level, 1.0)
 
 
-def _compose_navigation_hint(
-    room: str, object_names: Sequence[str], crowd_level: str
-) -> str:
+def _compose_navigation_hint(room: str, object_names: Sequence[str], crowd_level: str) -> str:
     room = room.lower()
     n_people = sum(1 for o in object_names if o == "person")
 
     if room == "hallway":
         if n_people >= 2:
-            return (
-                "Crowded hallway detected. Keep right, slow down, and maintain "
-                "safe distance from people."
-            )
+            return "Crowded hallway detected. Keep right, slow down, and maintain " "safe distance from people."
         if n_people == 1:
-            return (
-                "Single person in hallway. Pass on the left with moderate speed "
-                "and clear distance."
-            )
+            return "Single person in hallway. Pass on the left with moderate speed " "and clear distance."
         return "Empty hallway. Proceed at normal speed while staying on the right side."
 
     if room == "classroom":
         if any(o in object_names for o in ("desk", "chair", "table")):
-            return (
-                "Classroom with desks detected. Avoid cutting across front rows; "
-                "navigate around the perimeter."
-            )
-        return (
-            "Classroom detected. Move slowly and avoid abrupt turns near seated people."
-        )
+            return "Classroom with desks detected. Avoid cutting across front rows; " "navigate around the perimeter."
+        return "Classroom detected. Move slowly and avoid abrupt turns near seated people."
 
     if room == "lab":
-        if any(
-            o in object_names
-            for o in ("bench", "monitor", "bottle", "laptop", "keyboard")
-        ):
-            return (
-                "Lab environment detected. Keep a safe distance from benches and "
-                "equipment; avoid tight turns."
-            )
+        if any(o in object_names for o in ("bench", "monitor", "bottle", "laptop", "keyboard")):
+            return "Lab environment detected. Keep a safe distance from benches and " "equipment; avoid tight turns."
         return "Lab detected. Proceed cautiously and reduce speed."
 
     if room == "office":
         if any(o in object_names for o in ("chair", "desk")):
-            return (
-                "Office with desks and chairs. Navigate around desk boundaries and "
-                "avoid bumping into chairs."
-            )
+            return "Office with desks and chairs. Navigate around desk boundaries and " "avoid bumping into chairs."
         return "Office detected. Move at low speed and respect personal space."
 
     return "Proceed cautiously and maintain safe distance from people and obstacles."

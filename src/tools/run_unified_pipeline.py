@@ -53,6 +53,7 @@ logger.setLevel(logging.INFO)
 # Helpers
 # ---------------------------------------------------------
 
+
 def timestamp():
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -74,34 +75,23 @@ def draw_predictions(frame, objects, scene_label, conf, reasoning):
         x1, y1, x2, y2 = map(int, box.tolist())
         label = objects.names[int(cls)]
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(frame, label, (x1, y1 - 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
+        cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
 
     # Scene classification heading
-    cv2.putText(frame,
-                f"{scene_label.upper()} ({conf:.2f})",
-                (20, 40),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.1,
-                (0, 0, 255),
-                3)
+    cv2.putText(frame, f"{scene_label.upper()} ({conf:.2f})", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 255), 3)
 
     # Reasoning
-    cv2.putText(frame,
-                f"Crowd: {reasoning.crowd_level} | Risk: {reasoning.risk_score:.2f}",
-                (20, 80),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 0, 200),
-                2)
+    cv2.putText(
+        frame,
+        f"Crowd: {reasoning.crowd_level} | Risk: {reasoning.risk_score:.2f}",
+        (20, 80),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (0, 0, 200),
+        2,
+    )
 
-    cv2.putText(frame,
-                f"Hint: {reasoning.navigation_hint}",
-                (20, 115),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (50, 50, 255),
-                2)
+    cv2.putText(frame, f"Hint: {reasoning.navigation_hint}", (20, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (50, 50, 255), 2)
 
     return frame
 
@@ -109,6 +99,7 @@ def draw_predictions(frame, objects, scene_label, conf, reasoning):
 # ---------------------------------------------------------
 # Logging
 # ---------------------------------------------------------
+
 
 def append_json(entry):
     if JSON_LOG.exists():
@@ -127,6 +118,7 @@ def append_json(entry):
 # LOAD MODELS
 # ---------------------------------------------------------
 
+
 def load_models():
     detector = YOLO("models/yolo_detector/best.pt")
     classifier = IndoorClassifier()
@@ -136,6 +128,7 @@ def load_models():
 # ---------------------------------------------------------
 # PROCESS IMAGE
 # ---------------------------------------------------------
+
 
 def process_image(path: Path, detector, classifier):
     logger.info(f"Processing image → {path}")
@@ -156,19 +149,22 @@ def process_image(path: Path, detector, classifier):
 
     logger.info(f"[IMAGE SAVED] → {out_path.resolve()}")
 
-    append_json({
-        "type": "image",
-        "input": str(path.resolve()),
-        "output": str(out_path.resolve()),
-        "scene": cls_res.label,
-        "confidence": cls_res.confidence,
-        "timestamp": timestamp(),
-    })
+    append_json(
+        {
+            "type": "image",
+            "input": str(path.resolve()),
+            "output": str(out_path.resolve()),
+            "scene": cls_res.label,
+            "confidence": cls_res.confidence,
+            "timestamp": timestamp(),
+        }
+    )
 
 
 # ---------------------------------------------------------
 # PROCESS VIDEO
 # ---------------------------------------------------------
+
 
 def process_video(path: Path, detector, classifier):
     logger.info(f"Processing video → {path}")
@@ -195,9 +191,7 @@ def process_video(path: Path, detector, classifier):
         cls_res = classifier.predict(frame)
         reasoning = reason_about_scene(cls_res.label, det_res)
 
-        frame = draw_predictions(frame, det_res,
-                                 cls_res.label, cls_res.confidence,
-                                 reasoning)
+        frame = draw_predictions(frame, det_res, cls_res.label, cls_res.confidence, reasoning)
 
         writer.write(frame)
 
@@ -210,6 +204,7 @@ def process_video(path: Path, detector, classifier):
 # ---------------------------------------------------------
 # PROCESS WEBCAM
 # ---------------------------------------------------------
+
 
 def process_webcam(index: int, detector, classifier):
     logger.info(f"Webcam started (device={index}) — Press Ctrl+C to stop")
@@ -237,9 +232,7 @@ def process_webcam(index: int, detector, classifier):
             cls_res = classifier.predict(frame)
             reasoning = reason_about_scene(cls_res.label, det_res)
 
-            frame = draw_predictions(frame, det_res,
-                                     cls_res.label, cls_res.confidence,
-                                     reasoning)
+            frame = draw_predictions(frame, det_res, cls_res.label, cls_res.confidence, reasoning)
 
             writer.write(frame)
 
@@ -255,6 +248,7 @@ def process_webcam(index: int, detector, classifier):
 # ---------------------------------------------------------
 # MASTER ROUTER
 # ---------------------------------------------------------
+
 
 def run_unified(input_path: str):
     detector, classifier = load_models()
@@ -286,6 +280,7 @@ def run_unified(input_path: str):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         run_unified(sys.argv[1])
     else:

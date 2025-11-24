@@ -1,4 +1,3 @@
-
 # """
 # logger.py
 # Purpose:
@@ -37,9 +36,9 @@
 #     return logging.getLogger(name)
 
 """
-Simple logging utility for RSAN Project.
+Simple logging utility for the RSAN Project.
 
-Provides a get_logger(name) function that returns a module-level logger
+Provides a get_logger(name) function that returns a configured logger
 with consistent formatting and INFO-level default logging.
 """
 
@@ -47,38 +46,56 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-_LOGGERS = {}
+# Internal cache to avoid duplicate logger creation
+_LOGGERS: dict[str, logging.Logger] = {}
 
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:
-    global _LOGGERS
-    if name in _LOGGERS:
-        return _LOGGERS[name]
+    """
+    Retrieve or create a named logger with consistent formatting.
 
-    logger = logging.getLogger(name if name else "rsan")
+    Args:
+        name (str | None): Optional logger name. If None, uses "rsan".
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
+    logger_name = name if name else "rsan"
+
+    # Return cached logger if it already exists
+    if logger_name in _LOGGERS:
+        return _LOGGERS[logger_name]
+
+    # Create new logger
+    logger = logging.getLogger(logger_name)
     logger.setLevel(logging.INFO)
 
+    # Only add handlers if logger is new (prevents duplicates)
     if not logger.handlers:
-        # Console handler
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
         formatter = logging.Formatter(
             fmt="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-        ch.setFormatter(formatter)
-        logger.addHandler(ch)
 
-        # Optional file handler under outputs/logs/
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+        # File handler (outputs/logs/rsan.log)
         project_root = Path(__file__).resolve().parents[2]
         log_dir = project_root / "outputs" / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
-        fh = logging.FileHandler(log_dir / "rsan.log")
-        fh.setLevel(logging.INFO)
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
 
+        file_handler = logging.FileHandler(log_dir / "rsan.log")
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        # Prevent double propagation to root logger
         logger.propagate = False
 
-    _LOGGERS[name] = logger
+    # Cache and return
+    _LOGGERS[logger_name] = logger
     return logger

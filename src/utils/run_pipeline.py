@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import List
 
 import cv2
-import numpy as np
 from ultralytics import YOLO
 
 from src.reasoning.indoor_classifier import IndoorClassifier
