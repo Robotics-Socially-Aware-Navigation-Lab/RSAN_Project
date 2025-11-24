@@ -194,5 +194,15 @@ def detect_any(input_path: str):
     logger.error(f"Invalid path: {input_path}")
 
 
+# if __name__ == "__main__":
+#     detect_any("/Users/rolandoyax/Desktop/small.mp4")
+
 if __name__ == "__main__":
-    detect_any("/Users/rolandoyax/Desktop/photo.jpg")
+    import sys
+
+    if len(sys.argv) > 1:
+        detect_any(sys.argv[1])
+    else:
+        print("Usage: python test_detect_any.py [image|video|directory|webcam]")
+        print("Example:")
+        print("   python test_detect_any.py webcam")
