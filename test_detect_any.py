@@ -10,10 +10,11 @@ Outputs are stored in:
 Author: Senior ML Engineer / Robotics Navigation Specialist
 """
 
-import cv2
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import cv2
 
 from src.perception.detect_utils import run_detection
 

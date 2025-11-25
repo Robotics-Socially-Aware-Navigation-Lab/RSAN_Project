@@ -16,6 +16,6 @@ paths:
   models: models                       # Folder to save trained or fine-tuned models
   results: results                     # All inference outputs and evaluation results
   logs: results/logs                   # Text-based logs for debugging and training records
-  detections: results/detections       # YOLOv9 output predictions (images, JSON, etc.)
+  detections: results/detections       # YOLOv8 output predictions (images, JSON, etc.)
   configs: configs                     # All configuration files (like this one)
   docs: docs                           # Documentation, diagrams, and markdown reports

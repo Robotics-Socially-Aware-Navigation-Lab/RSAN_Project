@@ -1,5 +1,6 @@
 import cv2
 from ultralytics import YOLO
+
 from src.reasoning.indoor_classifier import IndoorClassifier
 from src.reasoning.scene_context import reason_about_scene
 

@@ -6,15 +6,16 @@ Other modules (scene reasoning, ROS node, etc.) call THIS file.
 """
 
 from __future__ import annotations
+
 import logging
 from typing import List
+
 import numpy as np
 
 from src.perception.detect_objects import (
-    get_default_detector,
     Detection,
+    get_default_detector,
 )
-
 
 logger = logging.getLogger(__name__)
 

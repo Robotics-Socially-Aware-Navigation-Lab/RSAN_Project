@@ -1,7 +1,7 @@
 """
 train_yolo.py
 Purpose:
-    Train or fine-tune a YOLOv9 model on your prepared dataset.
+    Train or fine-tune a YOLOv8 model on your prepared dataset.
 
 How:
     - Loads dataset paths and configurations dynamically
