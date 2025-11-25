@@ -99,7 +99,7 @@ This is the **preferred method** for all contributors.
 It automatically detects whether **Conda** is available and uses it for environment creation.  
 If Conda isn’t found, it safely falls back to a **Python virtual environment (venv)**.
 
-```bash
+<!-- ```bash -->
 # Clone the repository
 git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
 cd RSAN_Project
@@ -158,3 +158,52 @@ call env\Scripts\activat
 conda deactivate
 # or
 deactivate
+
+### How to Run & Test Every Component of the RSAN System
+#Before running any test:
+
+cd ~/Desktop/RSAN_Project
+conda activate rsan_env
+
+# YOLOv8 Object Detection
+python test_detection.py
+
+# Detect Image or Video
+python test_detect_any.py /path/to/image.jpg
+
+python test_detect_any.py /path/to/video.mp4
+
+## Webcam Detection
+python test_detect_any.py webcam
+
+### Indoor Scene / Room Classification (YOLOv8-CLS)
+
+# Show Tool Options
+python -m src.tools.run_scene_classification --help
+
+# Classify Image
+python -m src.tools.run_scene_classification photo.jpg --out-dir outputs/classification
+
+# Classify Folder
+
+python -m src.tools.run_scene_classification images_folder/
+
+# Outputs:
+outputs/classification/images/
+outputs/classification/results.json
+
+### Full Unified Pipeline
+
+# Single Image
+python -m src.tools.run_unified_pipeline path/to/image.jpg
+
+# Video
+python -m src.tools.run_unified_pipeline path/to/video.mp4
+
+#  Webcam
+python -m src.tools.run_unified_pipeline webcam
+
+# Outputs:
+outputs/full_pipeline/images/
+outputs/full_pipeline/videos/
+outputs/full_pipeline/logs/results.json

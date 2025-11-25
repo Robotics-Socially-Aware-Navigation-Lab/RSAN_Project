@@ -1,6 +1,6 @@
 # Indoor Scene Classification Dataset for YOLOv8-CLS
 
-path: ../indoor_scenes_cls     # base directory of your dataset
+path: ../indoor_scenes_cls     # base directory of the dataset
 
 train: train
 val: val

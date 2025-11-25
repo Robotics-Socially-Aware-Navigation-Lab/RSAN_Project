@@ -18,7 +18,7 @@ Fully robust to:
     - Broken video streams
     - Keyboard interrupts
 
-Author: Senior ML Engineer / Robotics Navigation Specialist
+Author: RSAN_Project_team
 """
 
 # import os

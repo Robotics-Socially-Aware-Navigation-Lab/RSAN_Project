@@ -16,7 +16,7 @@ Output directories:
     outputs/full_pipeline/videos/
     outputs/full_pipeline/logs/
 
-Author: Senior ML & Robotics Engineer
+Author: Rolando Yax
 """
 
 import cv2
