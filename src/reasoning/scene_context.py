@@ -14,7 +14,8 @@ API is simple and future-proof for LLM-based reasoning later.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Sequence, Any
+from typing import Any, List, Sequence
+
 import numpy as np
 
 from src.utils.logger import get_logger

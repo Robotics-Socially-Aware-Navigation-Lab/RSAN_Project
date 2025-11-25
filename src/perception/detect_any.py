@@ -21,10 +21,11 @@ Fully robust to:
 Author: RSAN_Project_team
 """
 
-# import os
-import cv2
 import logging
 from pathlib import Path
+
+# import os
+import cv2
 
 # from typing import List
 from src.perception.detect_utils import run_detection

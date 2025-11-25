@@ -1,4 +1,3 @@
-
 """
 Robust & scalable indoor scene classification pipeline.
 -------------------------------------------------------
@@ -22,12 +21,13 @@ Outputs:
 Author: Rolando – RSAN Project
 """
 
-import cv2
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any
+from pathlib import Path
+from typing import Any, Dict
+
+import cv2
 
 from src.reasoning.indoor_classifier import IndoorClassifier
 
@@ -159,11 +159,7 @@ def classify_video(path: Path, clf: IndoorClassifier):
         annotated = annotate_image(frame.copy(), result.label, result.confidence)
         out_vid.write(annotated)
 
-        frame_results.append({
-            "frame": frame_idx,
-            "label": result.label,
-            "confidence": result.confidence
-        })
+        frame_results.append({"frame": frame_idx, "label": result.label, "confidence": result.confidence})
 
         frame_idx += 1
 
@@ -207,6 +203,7 @@ def classify_folder(folder: Path, clf: IndoorClassifier):
 # It pass the webcam frame into the YOLOv8 detector:
 # then it taeks the detected regions and feeds them into the IndoorClassifier:
 # finally, it uses the SceneReasoner to interpret the classified scenes.
+
 
 def classify_webcam(clf: IndoorClassifier):
     logger.info("[WEBCAM] Starting classification… (press Q to quit)")

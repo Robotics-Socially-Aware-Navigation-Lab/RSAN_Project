@@ -21,6 +21,7 @@
 #         print(det.class_name, det.confidence, det.bbox_xyxy)
 
 import cv2
+
 from src.perception.detect_utils import run_detection
 
 IMAGE_PATH = "/Users/rolandoyax/Desktop/photo.jpg"
