@@ -95,6 +95,14 @@ To ensure all team members can reproduce the same environment on **Mac, Linux, o
 
 ### Recommended: Smart Environment Setup (Automatic)
 
+## Installation & Setup Guide
+
+To ensure all team members can reproduce the same environment on **Mac, Linux, or Windows**, follow one of the setup methods below.
+
+---
+
+### Recommended: Smart Environment Setup (Automatic)
+
 This is the **preferred method** for all contributors.  
 It automatically detects whether **Conda** is available and uses it for environment creation.  
 If Conda isn’t found, it safely falls back to a **Python virtual environment (venv)**.
@@ -110,8 +118,9 @@ chmod +x setup.sh
 # Run the smart setup (auto-detects Conda or Python venv)
 bash setup.sh
 
-### For Mac / Linux Users (Manual Setup)
 
+
+### For Mac / Linux Users (Manual Setup)
 # Clone the repository
 git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
 cd RSAN_Project
@@ -129,8 +138,9 @@ pip freeze > requirements.txt
 # Update conda environment
 conda env export > environment.yml
 
-## For Windows Users
 
+
+### For Windows Users
 # Clone the repository
 git clone https://github.com/Robotics-Socially-Aware-Navigation-Lab/RSAN_Project.git
 cd RSAN_Project
@@ -139,6 +149,9 @@ cd RSAN_Project
 setup.bat
 
 # Activate environment
+call conda activate rsan_env
+
+or activate venv fallback
 call env\Scripts\activate
 
 # To deactivate
