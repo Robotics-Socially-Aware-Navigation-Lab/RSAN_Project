@@ -20,13 +20,18 @@ import os
 
 from openai import OpenAI
 
-from utils.file_utils import load_paths
-from utils.logger import setup_logger
+# from utils.file_utils import load_paths
+from src.utils.file_utils import load_paths
+
+# from utils.logger import setup_logger
+# from src.utils.logger import setup_logger
+from src.utils.logger import get_logger
 
 
 def llm_reason():
     paths = load_paths()
-    logger = setup_logger(name="llm_reasoner")
+    # logger = setup_logger(name="llm_reasoner")
+    logger = get_logger("llm_reasoner")
 
     # Load detection JSON output
     detection_file = list((paths["detections"]).glob("*.json"))[0]

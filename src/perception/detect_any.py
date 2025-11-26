@@ -1,42 +1,42 @@
+
 """
 detect_any.py
 -------------
 Unified multimodal detection pipeline for RSAN.
 
 Supports:
-    - Single image
-    - Multiple images
-    - Single video
-    - Multiple videos
-    - Webcam streaming
+    - Image detection
+    - Video detection
+    - Webcam detection
+    - Directory batch detection
 
-Fully robust to:
-    - Missing files
-    - Corrupt images
-    - Unsupported formats
-    - Empty frames
-    - Broken video streams
-    - Keyboard interrupts
+Uses paths defined in:
+    configs/project_paths.yaml
+
+Outputs saved to:
+    outputs/detections/images/
+    outputs/detections/videos/
+    outputs/detections/webcam/
 
 Author: RSAN_Project_team
 """
 
 import logging
+import time
 from pathlib import Path
 
-# import os
 import cv2
 
-# from typing import List
 from src.perception.detect_utils import run_detection
+from src.utils.file_utils import load_paths
 
-# ---------------------------------------------------------
-# Logging Configuration (Production Standard)
-# ---------------------------------------------------------
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+# ---------------------------------------------------------
+# Helper Functions
+# ---------------------------------------------------------
 def is_image(file: Path) -> bool:
     return file.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
 
@@ -45,11 +45,15 @@ def is_video(file: Path) -> bool:
     return file.suffix.lower() in {".mp4", ".mov", ".avi", ".mkv", ".wmv"}
 
 
+def ensure_dir(path: Path):
+    path.mkdir(parents=True, exist_ok=True)
+
+
 # ---------------------------------------------------------
-# DRAWING UTILITIES (Scalable + Modular)
+# Drawing Function
 # ---------------------------------------------------------
 def draw_detections(frame, detections):
-    """Draw bounding boxes + labels safely."""
+    """Draw YOLO bounding boxes + class labels."""
     if detections is None:
         return frame
 
@@ -78,20 +82,24 @@ def draw_detections(frame, detections):
 def process_image(path: Path):
     logger.info(f"Processing image: {path}")
 
-    if not path.exists():
-        logger.error(f"Image does not exist: {path}")
-        return
+    paths = load_paths()
+    out_dir = paths["detections"] / "images"
+    ensure_dir(out_dir)
 
     img = cv2.imread(str(path))
-
     if img is None:
-        logger.error(f"Unable to read image (corrupted?): {path}")
+        logger.error(f"Unable to read image: {path}")
         return
 
     detections = run_detection(img)
-
     frame_with_boxes = draw_detections(img, detections)
 
+    # Save output
+    save_path = out_dir / f"{path.stem}_detected.jpg"
+    cv2.imwrite(str(save_path), frame_with_boxes)
+    logger.info(f"[SAVED] {save_path}")
+
+    # Show result
     cv2.imshow("YOLO Image Detection", frame_with_boxes)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -103,120 +111,125 @@ def process_image(path: Path):
 def process_video(path: Path):
     logger.info(f"Processing video: {path}")
 
-    cap = cv2.VideoCapture(str(path))
+    paths = load_paths()
+    out_dir = paths["detections"] / "videos"
+    ensure_dir(out_dir)
 
+    cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
         logger.error(f"Cannot open video: {path}")
         return
 
-    try:
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                logger.info("Reached end of video.")
-                break
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    save_path = out_dir / f"{path.stem}_{timestamp}.mp4"
 
-            detections = run_detection(frame)
-            frame = draw_detections(frame, detections)
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    w = int(cap.get(3))
+    h = int(cap.get(4))
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(str(save_path), fourcc, fps, (w, h))
 
-            cv2.imshow("YOLO Video Detection", frame)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            logger.info("End of video.")
+            break
 
-            # Quit video with Q
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                logger.info("User exited video playback.")
-                break
+        detections = run_detection(frame)
+        frame = draw_detections(frame, detections)
 
-    except KeyboardInterrupt:
-        logger.warning("Interrupted by user.")
+        writer.write(frame)
+        cv2.imshow("YOLO Video Detection", frame)
 
-    finally:
-        cap.release()
-        cv2.destroyAllWindows()
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            logger.info("Video stopped by user.")
+            break
+
+    writer.release()
+    cap.release()
+    cv2.destroyAllWindows()
+    logger.info(f"[SAVED] {save_path}")
 
 
 # ---------------------------------------------------------
-# LIVE WEBCAM STREAM
+# WEBCAM PROCESSING
 # ---------------------------------------------------------
 def process_webcam(device=0):
-    logger.info("Starting webcam (Press 'q' to exit).")
+    logger.info("Starting webcam (Press 'q' to exit)")
+
+    paths = load_paths()
+    out_dir = paths["detections"] / "webcam"
+    ensure_dir(out_dir)
 
     cap = cv2.VideoCapture(device)
-
     if not cap.isOpened():
-        logger.error("Could not access webcam.")
+        logger.error("Webcam not accessible")
         return
 
-    try:
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                logger.warning("Empty webcam frame — continuing.")
-                continue
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            logger.warning("Empty webcam frame.")
+            continue
 
-            detections = run_detection(frame)
-            frame = draw_detections(frame, detections)
+        detections = run_detection(frame)
+        frame = draw_detections(frame, detections)
 
-            cv2.imshow("YOLO Webcam Detection", frame)
+        cv2.imshow("YOLO Webcam Detection", frame)
 
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                logger.info("Webcam stream terminated by user.")
-                break
+        # Save one frame per second
+        timestamp = int(time.time() * 1000)
+        save_path = out_dir / f"webcam_{timestamp}.jpg"
+        cv2.imwrite(str(save_path), frame)
 
-    except KeyboardInterrupt:
-        logger.warning("Webcam interrupted by user.")
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            logger.info("Webcam stopped by user.")
+            break
 
-    finally:
-        cap.release()
-        cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
 
 
 # ---------------------------------------------------------
-# UNIFIED PIPELINE
+# ROUTER
 # ---------------------------------------------------------
 def detect_any(input_path: str):
-    """Smart router that selects appropriate detection pipeline."""
-
     input_path = input_path.strip()
 
-    # Webcam mode
     if input_path.lower() in {"webcam", "cam"}:
         return process_webcam()
 
     path = Path(input_path)
 
-    # Single file
     if path.is_file():
         if is_image(path):
             return process_image(path)
-        elif is_video(path):
+        if is_video(path):
             return process_video(path)
-        else:
-            logger.error(f"Unsupported file type: {path.suffix}")
-            return
 
-    # Directory — batch processing
-    if path.is_dir():
-        logger.info(f"Batch processing directory: {path}")
-
-        files = sorted(path.iterdir())
-        if not files:
-            logger.error("Directory is empty — nothing to process.")
-            return
-
-        for file in files:
-            if is_image(file):
-                process_image(file)
-            elif is_video(file):
-                process_video(file)
-
+        logger.error(f"Unsupported file type: {path.suffix}")
         return
 
-    logger.error("Invalid input path. Must be file, directory, or 'webcam'.")
-    return
+    if path.is_dir():
+        logger.info(f"Batch processing folder: {path}")
+        for f in sorted(path.iterdir()):
+            if is_image(f):
+                process_image(f)
+            elif is_video(f):
+                process_video(f)
+        return
+
+    logger.error("Invalid input path. Must be a file, folder, or 'webcam'.")
 
 
 # ---------------------------------------------------------
-# MAIN (for standalone debugging)
+# CLI
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    detect_any("/Users/rolandoyax/Desktop/IMG_0025.jpg")
+    import sys
+
+    if len(sys.argv) < 2:
+        print("Usage: python -m src.perception.detect_any <image|video|directory|webcam>")
+        sys.exit(1)
+
+    detect_any(sys.argv[1])
