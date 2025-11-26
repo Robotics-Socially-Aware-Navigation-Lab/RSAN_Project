@@ -1,21 +1,42 @@
+
+# ============================================================
+# RSAN_Project Directory Configuration
+# Robust, scalable, and matched exactly to your repository
+# ============================================================
+
+# not used directly by load_paths but kept for reference
 project_dir: "/content/drive/MyDrive/SAN_Project"
 dataset_dir: "datasets/yolo_ready"
-model_dir: "models/yolov9_finetuned.pt"
-log_dir: "results/logs"
+model_dir: "models/yolo_detector/best.pt"
+log_dir: "outputs/logs"
 
-
-# SAN_Project Directory Configuration
-# Purpose:
-# Centralized configuration for file paths used throughout the project.
-# This keeps all data, models, and logs in a consistent structure.
-
+# ------------------------------------------------------------
+# PATH MAP USED BY load_paths()  (IMPORTANT SECTION)
+# ------------------------------------------------------------
 paths:
-  raw_data: datasets/raw               # Original unmodified datasets (e.g., COCO, SUN RGB-D)
-  processed_data: datasets/processed   # Cleaned or augmented datasets
-  yolo_ready: datasets/yolo_ready      # Training-ready YOLO data (images + labels)
-  models: models                       # Folder to save trained or fine-tuned models
-  results: results                     # All inference outputs and evaluation results
-  logs: results/logs                   # Text-based logs for debugging and training records
-  detections: results/detections       # YOLOv8 output predictions (images, JSON, etc.)
-  configs: configs                     # All configuration files (like this one)
-  docs: docs                           # Documentation, diagrams, and markdown reports
+  # ----------------------
+  # DATASET PIPELINE
+  # ----------------------
+  raw_data: datasets/raw
+  processed_data: datasets/processed
+  yolo_ready: datasets/yolo_ready
+
+  # ----------------------
+  # MODELS
+  # ----------------------
+  models: models                 # all model folders (YOLO, classifiers, etc.)
+
+  # ----------------------
+  # OUTPUT + PIPELINE RESULTS
+  # ----------------------
+  results: outputs               # root output directory
+  logs: outputs/logs             # rsan.log and pipeline logs
+  detections: outputs/detections # detection images + JSON
+  classification: outputs/classification   # classification outputs
+  full_pipeline: outputs/full_pipeline     # combined detector+classifier+LLM
+
+  # ----------------------
+  # CONFIG + DOCUMENTATION
+  # ----------------------
+  configs: configs
+  docs: docs
