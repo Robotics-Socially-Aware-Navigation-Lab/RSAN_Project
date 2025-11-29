@@ -1,6 +1,6 @@
 """
-Unified RSAN Perception Pipeline (Images, Videos, Webcam)
---------------------------------------------------------
+Unified RSAN Perception Pipeline
+--------------------------------
 
 Runs:
   • YOLO object detection
@@ -11,10 +11,8 @@ Runs:
         - Videos
         - Webcam streams
 
-Output directories:
-    outputs/full_pipeline/images/
-    outputs/full_pipeline/videos/
-    outputs/full_pipeline/logs/
+Output directories come from:
+    configs/project_paths.yaml
 
 Author: Rolando Yax
 """
@@ -27,14 +25,17 @@ from pathlib import Path
 import cv2
 from ultralytics import YOLO
 
+from src.utils.file_utils import load_paths
 from src.reasoning.indoor_classifier import IndoorClassifier
 from src.reasoning.scene_context import reason_about_scene
 
-# ---------------------------------------------------------
-# OUTPUT PATHS
-# ---------------------------------------------------------
 
-ROOT = Path("outputs/full_pipeline")
+# ---------------------------------------------------------
+# LOAD PATHS FROM YAML
+# ---------------------------------------------------------
+paths = load_paths()
+
+ROOT = paths["full_pipeline"]
 IMG_OUT = ROOT / "images"
 VID_OUT = ROOT / "videos"
 LOG_DIR = ROOT / "logs"
@@ -50,26 +51,40 @@ logger.setLevel(logging.INFO)
 
 
 # ---------------------------------------------------------
-# Helpers
+# Helper functions
 # ---------------------------------------------------------
-
-
 def timestamp():
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
 def is_image(p: Path):
-    return p.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp"}
+    return p.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".png"}
 
 
 def is_video(p: Path):
     return p.suffix.lower() in {".mp4", ".mov", ".avi", ".mkv"}
 
 
+def append_json(entry):
+    """Append a new entry to results.json safely."""
+    if JSON_LOG.exists():
+        with open(JSON_LOG, "r") as f:
+            data = json.load(f)
+    else:
+        data = []
+
+    data.append(entry)
+
+    with open(JSON_LOG, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+# ---------------------------------------------------------
+# Drawing
+# ---------------------------------------------------------
 def draw_predictions(frame, objects, scene_label, conf, reasoning):
-    """
-    Draw all annotations on the frame.
-    """
+    """Draw YOLO, Scene Classification, and Reasoning onto the frame."""
+
     # Draw YOLO boxes
     for box, cls in zip(objects.boxes.xyxy, objects.boxes.cls):
         x1, y1, x2, y2 = map(int, box.tolist())
@@ -77,7 +92,7 @@ def draw_predictions(frame, objects, scene_label, conf, reasoning):
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
 
-    # Scene classification heading
+    # Scene label
     cv2.putText(frame, f"{scene_label.upper()} ({conf:.2f})", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 255), 3)
 
     # Reasoning
@@ -97,88 +112,62 @@ def draw_predictions(frame, objects, scene_label, conf, reasoning):
 
 
 # ---------------------------------------------------------
-# Logging
+# Load models
 # ---------------------------------------------------------
-
-
-def append_json(entry):
-    if JSON_LOG.exists():
-        with open(JSON_LOG, "r") as f:
-            data = json.load(f)
-    else:
-        data = []
-
-    data.append(entry)
-
-    with open(JSON_LOG, "w") as f:
-        json.dump(data, f, indent=4)
-
-
-# ---------------------------------------------------------
-# LOAD MODELS
-# ---------------------------------------------------------
-
-
 def load_models():
-    detector = YOLO("models/yolo_detector/best.pt")
-    classifier = IndoorClassifier()
+    detector = YOLO(str(paths["models"] / "yolo_detector" / "best.pt"))
+    classifier = IndoorClassifier(device="cpu")
     return detector, classifier
 
 
 # ---------------------------------------------------------
-# PROCESS IMAGE
+# Process image
 # ---------------------------------------------------------
-
-
 def process_image(path: Path, detector, classifier):
-    logger.info(f"Processing image → {path}")
+    logger.info(f"[IMAGE] {path}")
 
     img = cv2.imread(str(path))
     if img is None:
-        logger.error(f"Could not read: {path}")
+        logger.error(f"Could not read image: {path}")
         return
 
-    det_res = detector(img)[0]
-    cls_res = classifier.predict(img)
-    reasoning = reason_about_scene(cls_res.label, det_res)
+    det = detector(img)[0]
+    cls = classifier.predict(img)
+    reasoning = reason_about_scene(cls.label, det)
 
-    img = draw_predictions(img, det_res, cls_res.label, cls_res.confidence, reasoning)
+    frame = draw_predictions(img, det, cls.label, cls.confidence, reasoning)
 
     out_path = IMG_OUT / f"{path.stem}_full_{timestamp()}.jpg"
-    cv2.imwrite(str(out_path), img)
-
-    logger.info(f"[IMAGE SAVED] → {out_path.resolve()}")
+    cv2.imwrite(str(out_path), frame)
+    logger.info(f"Saved → {out_path}")
 
     append_json(
         {
             "type": "image",
             "input": str(path.resolve()),
             "output": str(out_path.resolve()),
-            "scene": cls_res.label,
-            "confidence": cls_res.confidence,
+            "scene": cls.label,
+            "confidence": cls.confidence,
             "timestamp": timestamp(),
         }
     )
 
 
 # ---------------------------------------------------------
-# PROCESS VIDEO
+# Process video
 # ---------------------------------------------------------
-
-
 def process_video(path: Path, detector, classifier):
-    logger.info(f"Processing video → {path}")
+    logger.info(f"[VIDEO] {path}")
 
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
-        logger.error(f"Could not open video: {path}")
+        logger.error(f"Failed to open video: {path}")
         return
 
     out_path = VID_OUT / f"{path.stem}_full_{timestamp()}.mp4"
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     fps = cap.get(cv2.CAP_PROP_FPS) or 24
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    w, h = int(cap.get(3)), int(cap.get(4))
 
     writer = cv2.VideoWriter(str(out_path), fourcc, fps, (w, h))
 
@@ -187,38 +176,37 @@ def process_video(path: Path, detector, classifier):
         if not ret:
             break
 
-        det_res = detector(frame)[0]
-        cls_res = classifier.predict(frame)
-        reasoning = reason_about_scene(cls_res.label, det_res)
+        det = detector(frame)[0]
+        cls = classifier.predict(frame)
+        reasoning = reason_about_scene(cls.label, det)
 
-        frame = draw_predictions(frame, det_res, cls_res.label, cls_res.confidence, reasoning)
-
+        frame = draw_predictions(frame, det, cls.label, cls.confidence, reasoning)
         writer.write(frame)
 
     cap.release()
     writer.release()
 
-    logger.info(f"[VIDEO SAVED] → {out_path.resolve()}")
+    logger.info(f"Saved video → {out_path}")
 
 
 # ---------------------------------------------------------
-# PROCESS WEBCAM
+# Process webcam (fixed for smooth playback)
 # ---------------------------------------------------------
-
-
-def process_webcam(index: int, detector, classifier):
-    logger.info(f"Webcam started (device={index}) — Press Ctrl+C to stop")
+def process_webcam(detector, classifier, index: int = 0):
+    logger.info("[WEBCAM] Starting webcam (Ctrl+C to stop)")
 
     cap = cv2.VideoCapture(index)
     if not cap.isOpened():
-        logger.error("Cannot open webcam.")
+        logger.error("Webcam cannot be accessed.")
         return
 
     out_path = VID_OUT / f"webcam_full_{timestamp()}.mp4"
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    fps = 24
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # Force stable framerate
+    fps = 30  # FIX: stable fps
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
 
     writer = cv2.VideoWriter(str(out_path), fourcc, fps, (w, h))
 
@@ -228,35 +216,40 @@ def process_webcam(index: int, detector, classifier):
             if not ret:
                 continue
 
-            det_res = detector(frame)[0]
-            cls_res = classifier.predict(frame)
-            reasoning = reason_about_scene(cls_res.label, det_res)
+            det = detector(frame)[0]
+            cls = classifier.predict(frame)
+            reasoning = reason_about_scene(cls.label, det)
 
-            frame = draw_predictions(frame, det_res, cls_res.label, cls_res.confidence, reasoning)
+            frame = draw_predictions(frame, det, cls.label, cls.confidence, reasoning)
 
             writer.write(frame)
 
+            # FIX: smooth 30 FPS playback
+            if cv2.waitKey(int(1000 / 30)) & 0xFF == ord("q"):
+                break
+
+            cv2.imshow("Unified Pipeline Webcam", frame)
+
     except KeyboardInterrupt:
-        logger.info("Webcam stopped.")
+        logger.info("Webcam stopped")
 
     cap.release()
     writer.release()
+    cv2.destroyAllWindows()
 
-    logger.info(f"[WEBCAM SAVED] → {out_path.resolve()}")
+    logger.info(f"Saved webcam → {out_path}")
 
 
 # ---------------------------------------------------------
-# MASTER ROUTER
+# Master router
 # ---------------------------------------------------------
-
-
 def run_unified(input_path: str):
     detector, classifier = load_models()
     p = Path(input_path)
 
-    # Webcam mode
+    # Webcam
     if input_path.lower() in {"webcam", "cam"}:
-        return process_webcam(0, detector, classifier)
+        return process_webcam(detector, classifier)
 
     # Single image
     if p.is_file() and is_image(p):
@@ -266,7 +259,7 @@ def run_unified(input_path: str):
     if p.is_file() and is_video(p):
         return process_video(p, detector, classifier)
 
-    # Folder (batch of images/videos)
+    # Folder of files
     if p.is_dir():
         for f in sorted(p.iterdir()):
             if is_image(f):
@@ -278,6 +271,9 @@ def run_unified(input_path: str):
     logger.error(f"Invalid input: {input_path}")
 
 
+# ---------------------------------------------------------
+# CLI
+# ---------------------------------------------------------
 if __name__ == "__main__":
     import sys
 
@@ -285,4 +281,4 @@ if __name__ == "__main__":
         run_unified(sys.argv[1])
     else:
         print("Usage:")
-        print("   python -m src.tools.run_unified_pipeline <image|video|folder|webcam>")
+        print("  python -m src.tools.run_unified_pipeline <image|video|folder|webcam>")
