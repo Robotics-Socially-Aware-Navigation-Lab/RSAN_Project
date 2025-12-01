@@ -96,7 +96,7 @@ def _base_risk(room: str) -> float:
         return 0.6
     if room == "office":
         return 0.5
-    return 0.5
+    return 0.5  # default for all future rooms
 
 
 def _crowd_multiplier(crowd_level: str) -> float:
@@ -108,49 +108,94 @@ def _crowd_multiplier(crowd_level: str) -> float:
     }.get(crowd_level, 1.0)
 
 
+# -----------------------------------------------------------
+# NEW: ROBUST, SCALABLE NAVIGATION HINT FUNCTION
+# -----------------------------------------------------------
 def _compose_navigation_hint(room: str, object_names: Sequence[str], crowd_level: str) -> str:
-    room = room.lower()
-    n_people = sum(1 for o in object_names if o == "person")
+    """
+    Scalable, robust navigation-hint generator.
+    Works with ANY number of rooms and ANY number of object classes.
+    """
 
+    # Normalize inputs
+    room = (room or "unknown").lower()
+    objs = set(o.lower() for o in object_names)
+    n_people = sum(1 for o in objs if o == "person")
+
+    # -------------------------------------------------------
+    # 1. UNIVERSAL CROWD RULES
+    # -------------------------------------------------------
+    if n_people >= 3 or crowd_level == "high":
+        return (
+            "High crowd density detected. Reduce speed, maintain generous spacing, "
+            "and wait for openings before proceeding."
+        )
+
+    if n_people == 2:
+        return "Moderate crowd detected. Keep right, slow down, and avoid entering tight gaps."
+
+    if n_people == 1:
+        return "Single person detected. Maintain respectful distance and pass with smooth, predictable motion."
+
+    # -------------------------------------------------------
+    # 2. ROOM-SPECIFIC OPTIONAL LOGIC (safe for future scaling)
+    # -------------------------------------------------------
     if room == "hallway":
-        if n_people >= 2:
-            return "Crowded hallway detected. Keep right, slow down, and maintain " "safe distance from people."
-        if n_people == 1:
-            return "Single person in hallway. Pass on the left with moderate speed " "and clear distance."
-        return "Empty hallway. Proceed at normal speed while staying on the right side."
+        return (
+            "Navigate along the right side for clear passage. Maintain predictable motion "
+            "and watch for people approaching ahead."
+        )
 
     if room == "classroom":
-        if any(o in object_names for o in ("desk", "chair", "table")):
-            return "Classroom with desks detected. Avoid cutting across front rows; " "navigate around the perimeter."
-        return "Classroom detected. Move slowly and avoid abrupt turns near seated people."
+        if {"desk", "chair", "table"} & objs:
+            return "Classroom with desks detected. Avoid cutting across rows; follow perimeter paths."
+        return "Classroom detected. Move slowly and avoid sudden turns near seated individuals."
 
     if room == "lab":
-        if any(o in object_names for o in ("bench", "monitor", "bottle", "laptop", "keyboard")):
-            return "Lab environment detected. Keep a safe distance from benches and " "equipment; avoid tight turns."
-        return "Lab detected. Proceed cautiously and reduce speed."
+        if {"bench", "monitor", "equipment", "bottle", "laptop", "keyboard"} & objs:
+            return (
+                "Lab environment detected. Maintain safe distance from benches and equipment; " "avoid narrow passages."
+            )
+        return "Lab detected. Proceed cautiously and maintain distance from fragile surfaces."
 
     if room == "office":
-        if any(o in object_names for o in ("chair", "desk")):
-            return "Office with desks and chairs. Navigate around desk boundaries and " "avoid bumping into chairs."
-        return "Office detected. Move at low speed and respect personal space."
+        if {"chair", "desk", "monitor", "computer"} & objs:
+            return "Office detected. Navigate around desks and chairs, maintaining respectful distance."
+        return "Office detected. Move at low speed and maintain predictable motion."
 
-    return "Proceed cautiously and maintain safe distance from people and obstacles."
+    # -------------------------------------------------------
+    # 3. FUTURE-PROOF GENERIC RULES FOR UNKNOWN ROOMS
+    # -------------------------------------------------------
+    hazards = {
+        "stove",
+        "oven",
+        "microwave",
+        "sink",
+        "knife",
+        "glass",
+        "refrigerator",
+        "equipment",
+        "cord",
+        "cable",
+        "ladder",
+    }
+    if objs & hazards:
+        return "Potential hazards detected. Reduce speed and maintain extra distance from obstacles."
+
+    furniture_keywords = {"desk", "table", "chair", "sofa", "couch"}
+    if objs & furniture_keywords:
+        return "Furniture-heavy environment. Navigate around large objects and avoid tight gaps."
+
+    # Default fallback for ANY new future room types
+    return (
+        "Proceed cautiously, avoid close contact with obstacles, and maintain smooth, "
+        "predictable motion through the environment."
+    )
 
 
 def reason_about_scene(room_label: str, detections: Any) -> SceneContextResult:
     """
     Main entry point: combine room + detections into a navigation recommendation.
-
-    Parameters
-    ----------
-    room_label : str
-        Output from IndoorClassifier (e.g., 'hallway', 'lab', 'office', 'classroom').
-    detections : Any
-        YOLOv8 detection result, or list of object names, or list of dicts.
-
-    Returns
-    -------
-    SceneContextResult
     """
     object_names = _extract_object_names(detections)
     crowd_level = _estimate_crowd_level(object_names)
