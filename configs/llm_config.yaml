@@ -1,3 +1,32 @@
-model: "gpt-4-vision"
-temperature: 0.7
-prompt_template: "Describe the indoor environment based on detected objects."
+dataset_focus: "indoor"
+
+# To describe object-level scenes to the LLM
+classes:
+  - chair
+  - bed
+  - couch
+  - tv
+  - potted plant
+  - dining table
+  - toilet
+  - oven
+  - sink
+  - laptop
+
+model: "gpt-4.1"
+temperature: 0.4
+
+prompt_template: |
+  You are a robotic navigation expert in an indoor environment.
+
+  Room type: {room_label}
+  Detected objects: {objects}
+
+  Using this information, describe:
+
+  1. The key objects and what they imply about the scene.
+  2. Any social cues (crowds, privacy, typical human activities).
+  3. Possible navigation hazards.
+  4. A short, concrete navigation recommendation for a mobile robot.
+
+  Be concise but specific (4–6 sentences).

@@ -1,6 +1,6 @@
 # Welcome to the Robotics Socially Aware Navigation Lab (RSAN Lab)
 
-This organization was established to facilitate research and development in **socially aware robotic navigation**, combining **computer vision**, **machine learning**, and **robotic reasoning** to create context-aware autonomous systems.
+This group was established to facilitate research and development in **socially aware robotic navigation**, combining **computer vision**, **machine learning**, and **robotic reasoning** to create context-aware autonomous systems.
 
 The **RSAN_Project** is a research-driven system developed for **CS470: Advanced Software Design Project** at **Sonoma State University**.  
 It integrates **AI perception**, **Large Language Models (LLMs)**, and **robotic navigation** using **ROS2** to enable socially aware and intelligent robot behavior.
@@ -79,11 +79,6 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 | Reasoning | **ChatGPT-Vision / LangChain** | Semantic interpretation of detected scenes |
 | Robotics | **ROS2 (Humble)** | Real-world control and sensor integration |
 | ML Workflow | **Python, PyTorch, Jupyter, Colab** | Model training and experimentation |
-
----
-
-## Project Architecture
-Project architecture here later 
 
 ---
 
@@ -210,11 +205,18 @@ outputs/classification/results.json
 # Single Image
 python -m src.tools.run_unified_pipeline path/to/image.jpg
 
+# Example 
+
 # Video
 python -m src.tools.run_unified_pipeline path/to/video.mp4
 
+# Example 
+python -m src.tools.run_unified_pipeline /Users/rolandoyax/Desktop/NEWindoor_videos/IMG_6432.MOV
+
 #  Webcam
 python -m src.tools.run_unified_pipeline webcam
+
+# Example 
 
 # Outputs:
 outputs/full_pipeline/images/
