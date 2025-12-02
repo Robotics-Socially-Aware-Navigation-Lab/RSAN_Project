@@ -1,20 +1,20 @@
 """
-Unified RSAN Perception Pipeline (Rule-Based + Hybrid Fusion Version)
+Unified RSAN Perception Pipeline (Hybrid + Safe LLM Version)
 --------------------------------------------------------------------
 
-Real-world robotics–grade behavior:
-  • IMAGE mode  = one short rule-based summary sentence overlay
-  • VIDEO mode  = one short rule-based summary sentence (clean HUD)
-  • WEBCAM mode = one short rule-based summary sentence (real-time safe)
-  • Full LLM reasoning always stored in outputs/reasoning_output.txt
-  • Full scene + LLM context stored in outputs/full_pipeline/logs/results.json
+Capabilities:
+  • YOLOv8 object detection
+  • Indoor scene classification (YOLOv8-CLS)
+  • Hybrid Fusion (YOLO objects refine indoor classification)
+  • Scene-level reasoning (risk, crowd, hints)
+  • Optional LLM reasoning (safe: disabled if no API key)
+  • Clean 1-sentence summary overlay
+  • Image, video, and webcam support
 
-Hybrid Fusion:
-  • YOLO object detection refines indoor classification label
-  • Indoor classifier predictions are corrected using detected objects
-
-Author: students
-Updated: students
+Team-Safe Behavior:
+  • If OPENAI_API_KEY is missing → pipeline runs normally
+  • LLM reasoning becomes fallback text
+  • Red overlay: “LLM DISABLED — No API Key”
 """
 
 from __future__ import annotations
@@ -34,13 +34,15 @@ from src.reasoning.llm_reasoner import llm_reason_from_detections
 from src.reasoning.scene_context import SceneContextResult, reason_about_scene
 from src.utils.file_utils import load_paths
 
+
 # ---------------------------------------------------------
 # LOAD ROOM→OBJECT MAP
 # ---------------------------------------------------------
 ROOM_OBJECT_MAP = json.load(open("src/reasoning/room_object_map.json"))
 
+
 # ---------------------------------------------------------
-# PATHS
+# PIPELINE PATHS
 # ---------------------------------------------------------
 paths = load_paths()
 
@@ -60,7 +62,7 @@ logger.setLevel(logging.INFO)
 
 
 # ---------------------------------------------------------
-# UTIL
+# SIMPLE UTILITIES
 # ---------------------------------------------------------
 def timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -77,29 +79,26 @@ def is_video(p: Path) -> bool:
 def append_json(entry: Dict[str, Any]) -> None:
     """Append a new entry to results.json safely."""
     if JSON_LOG.exists():
-        with open(JSON_LOG, "r") as f:
-            data = json.load(f)
+        data = json.load(open(JSON_LOG))
     else:
         data = []
-
     data.append(entry)
-
-    with open(JSON_LOG, "w") as f:
-        json.dump(data, f, indent=4)
+    json.dump(data, open(JSON_LOG, "w"), indent=4)
 
 
 def _extract_object_counts(det_result) -> Tuple[Counter, int]:
-    counts: Counter = Counter()
+    """Convert YOLO detection results → a count dict."""
+    counts = Counter()
     total = 0
 
     if det_result is None or det_result.boxes is None:
-        return counts, total
+        return counts, 0
 
     names = det_result.names
     cls_ids = det_result.boxes.cls.cpu().numpy().astype(int)
 
     for cid in cls_ids:
-        label = names.get(int(cid), str(int(cid)))
+        label = names.get(int(cid), f"id_{cid}")
         counts[label] += 1
         total += 1
 
@@ -107,78 +106,59 @@ def _extract_object_counts(det_result) -> Tuple[Counter, int]:
 
 
 # ---------------------------------------------------------
-# HYBRID FUSION LOGIC (Universal)
+# HYBRID FUSION (YOLO + Indoor CLS)
 # ---------------------------------------------------------
-def refine_scene_with_objects(scene_label: str, det_result) -> str:
+def refine_scene_with_objects(raw_label: str, det_result) -> str:
     """
     Universal Hybrid Fusion:
-    Uses object detection to refine indoor classification automatically.
-    Works for unlimited scene classes.
+    Uses YOLO objects to refine indoor classification.
+    Works for unlimited classes via JSON file.
     """
     if det_result is None or det_result.boxes is None:
-        return scene_label
+        return raw_label
 
     names = det_result.names
     cls_ids = det_result.boxes.cls.cpu().numpy().astype(int)
     detected = {names[int(cid)].lower() for cid in cls_ids}
 
-    best_label = scene_label
+    best_label = raw_label
     best_score = 0
 
-    # Score based on matching objects
     for room, keywords in ROOM_OBJECT_MAP.items():
-        score = len(set(keywords) & detected)
+        score = len(detected & set(keywords))
         if score > best_score:
             best_score = score
             best_label = room
 
-    # Require at least 2 matching keywords
-    if best_score >= 2:
-        return best_label
-
-    return scene_label
+    # Require ≥ 2 matching items to override
+    return best_label if best_score >= 2 else raw_label
 
 
 # ---------------------------------------------------------
-# SUMMARY SENTENCE
+# BUILD RULE-BASED SUMMARY
 # ---------------------------------------------------------
-def _build_rule_based_summary(room_label: str, scene: SceneContextResult, det_result, llm_reasoning: str) -> str:
+def _build_rule_summary(label: str, scene: SceneContextResult, det_result, llm_text: str) -> str:
+    obj_counts, total = _extract_object_counts(det_result)
+    top_objs = [o for o, _ in obj_counts.most_common(2)]
 
-    room = room_label.lower()
+    obj_fragment = ""
+    if total > 0:
+        obj_fragment = f" with {', '.join(top_objs)}" if top_objs else " with detected objects"
 
-    obj_counts, total_dets = _extract_object_counts(det_result)
-    top_objs = [lbl for lbl, _ in obj_counts.most_common(2)]
+    txt = (
+        f"{label.capitalize()}{obj_fragment}, "
+        f"crowd {scene.crowd_level}, "
+        f"risk {scene.risk_score:.2f}, "
+        f"{scene.navigation_hint}."
+    )
 
-    # Room phrase
-    room_phrase = room if room else "scene"
-
-    # Object phrase
-    if top_objs and total_dets > 0:
-        obj_fragment = f" with {', '.join(top_objs)}"
-    elif total_dets > 0:
-        obj_fragment = " with multiple detected objects"
-    else:
-        obj_fragment = ""
-
-    # Crowd + risk
-    crowd_fragment = f", crowd {scene.crowd_level}" if scene.crowd_level else ""
-    risk_fragment = f", risk {scene.risk_score:.2f}"
-
-    # Navigation hint
-    hint_text = scene.navigation_hint.strip()
-    first_sentence = hint_text.split(".", 1)[0].strip()
-    hint_fragment = f", {first_sentence[0].lower() + first_sentence[1:]}" if first_sentence else ""
-
-    summary = f"{room_phrase.capitalize()}{obj_fragment}{crowd_fragment}{risk_fragment}{hint_fragment}."
-
-    if len(summary) > 160:
-        summary = summary[:157].rstrip() + "..."
-
-    return summary
+    if len(txt) > 160:
+        txt = txt[:157] + "..."
+    return txt
 
 
 # ---------------------------------------------------------
-# DRAW OVERLAYS
+# DRAW OUTPUT
 # ---------------------------------------------------------
 def draw_predictions(
     frame,
@@ -188,43 +168,101 @@ def draw_predictions(
     scene: SceneContextResult,
     summary_sentence: Optional[str],
 ):
+    """
+    Draw:
+        - YOLO bounding boxes
+        - Indoor classification label
+        - Crowd + Risk
+        - Navigation hint
+        - Summary sentence
+    """
+
     img_h, img_w = frame.shape[:2]
 
-    # YOLO bounding boxes
+    # =========================================================
+    # YOLO BOUNDING BOXES  (Green)
+    # =========================================================
     if det_result is not None and det_result.boxes is not None:
-        for box, cls_id, conf_box in zip(det_result.boxes.xyxy, det_result.boxes.cls, det_result.boxes.conf):
-
+        for box, cls_id, conf_box in zip(
+            det_result.boxes.xyxy,
+            det_result.boxes.cls,
+            det_result.boxes.conf,
+        ):
             x1, y1, x2, y2 = map(int, box.tolist())
             label = det_result.names[int(cls_id)]
             conf_val = float(conf_box)
 
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), max(2, img_w // 800))
+            # Box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
 
-            txt = f"{label} {conf_val:.2f}"
-            (tw, th), _ = cv2.getTextSize(txt, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)
+            # Label
+            label_text = f"{label} {conf_val:.2f}"
+            (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)
+
             cv2.rectangle(frame, (x1, y1 - th - 10), (x1 + tw + 10, y1), (0, 255, 0), -1)
-            cv2.putText(frame, txt, (x1 + 5, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2)
 
-    # Scene label
-    cv2.putText(frame, f"{scene_label.upper()} ({conf:.2f})", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (0, 0, 255), 5)
+            cv2.putText(
+                frame,
+                label_text,
+                (x1 + 5, y1 - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.9,
+                (0, 0, 0),
+                2,
+            )
 
-    # Crowd + risk
+    # =========================================================
+    # SCENE LABEL — BIG RED
+    # =========================================================
+    cv2.putText(
+        frame,
+        f"{scene_label.upper()} ({conf:.2f})",
+        (20, 60),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        2.0,
+        (0, 0, 255),  # STRONG RED
+        5,
+    )
+
+    # =========================================================
+    # CROWD + RISK — SOFT RED
+    # =========================================================
     cv2.putText(
         frame,
         f"Crowd: {scene.crowd_level} | Risk: {scene.risk_score:.2f}",
         (20, 120),
         cv2.FONT_HERSHEY_SIMPLEX,
-        1.1,
-        (0, 0, 200),
+        1.3,
+        (0, 0, 220),  # SOFT RED
         3,
     )
 
-    # Navigation Hint
-    cv2.putText(frame, f"Hint: {scene.navigation_hint}", (20, 170), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (50, 50, 255), 3)
+    # =========================================================
+    # NAVIGATION HINT — ORANGE
+    # =========================================================
+    cv2.putText(
+        frame,
+        f"Hint: {scene.navigation_hint}",
+        (20, 170),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.0,
+        (50, 50, 255),  # ORANGE
+        3,
+    )
 
-    # Summary sentence
+    # =========================================================
+    # SUMMARY — MAGENTA
+    # =========================================================
     if summary_sentence:
-        cv2.putText(frame, f"Summary: {summary_sentence}", (20, 230), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (140, 0, 180), 3)
+        cv2.putText(
+            frame,
+            f"Summary: {summary_sentence}",
+            (20, 230),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (180, 0, 180),  # MAGENTA
+            3,
+        )
 
     return frame
 
@@ -243,65 +281,26 @@ def load_models():
 # ---------------------------------------------------------
 def process_image(path: Path, detector, classifier):
     logger.info(f"[IMAGE] {path}")
-
     img = cv2.imread(str(path))
     if img is None:
-        logger.error(f"Could not read image: {path}")
+        logger.error("Image read failed.")
         return
 
-    det_result = detector(img)[0]
+    det = detector(img)[0]
+    cls = classifier.predict(img)
 
-    cls_raw = classifier.predict(img)
-    raw_scene_label = cls_raw.label
+    fused_label = refine_scene_with_objects(cls.label, det)
+    scene = reason_about_scene(fused_label, det)
 
-    fused_scene_label = refine_scene_with_objects(raw_scene_label, det_result)
+    llm_text = llm_reason_from_detections(fused_label, det, source=str(path))
+    summary = _build_rule_summary(fused_label, scene, det, llm_text)
 
-    scene = reason_about_scene(fused_scene_label, det_result)
+    frame = draw_predictions(img, det, fused_label, cls.confidence, scene, summary)
 
-    full_llm = llm_reason_from_detections(
-        room_label=fused_scene_label,
-        detections=det_result,
-        source=str(path),
-        save=True,
-        print_to_console=True,
-    )
+    out = IMG_OUT / f"{path.stem}_full_{timestamp()}.jpg"
+    cv2.imwrite(str(out), frame)
 
-    summary_sentence = _build_rule_based_summary(fused_scene_label, scene, det_result, full_llm)
-
-    frame = draw_predictions(
-        img,
-        det_result,
-        fused_scene_label,
-        cls_raw.confidence,
-        scene,
-        summary_sentence,
-    )
-
-    out_path = IMG_OUT / f"{path.stem}_full_{timestamp()}.jpg"
-    cv2.imwrite(str(out_path), frame)
-
-    obj_counts, total_dets = _extract_object_counts(det_result)
-
-    append_json(
-        {
-            "mode": "image",
-            "input": str(path.resolve()),
-            "output": str(out_path.resolve()),
-            "timestamp": timestamp(),
-            "room_label_raw": raw_scene_label,
-            "room_label_fused": fused_scene_label,
-            "room_confidence": cls_raw.confidence,
-            "crowd_level": scene.crowd_level,
-            "risk_score": scene.risk_score,
-            "navigation_hint": scene.navigation_hint,
-            "total_detections": total_dets,
-            "object_counts": dict(obj_counts),
-            "llm_full_reasoning": full_llm,
-            "summary_sentence": summary_sentence,
-        }
-    )
-
-    logger.info(f"Saved → {out_path}")
+    logger.info(f"Saved → {out}")
 
 
 # ---------------------------------------------------------
@@ -312,86 +311,48 @@ def process_video(path: Path, detector, classifier):
 
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
-        logger.error(f"Failed to open video: {path}")
+        logger.error("Failed to open video.")
         return
 
-    out_path = VID_OUT / f"{path.stem}_full_{timestamp()}.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     fps = cap.get(cv2.CAP_PROP_FPS) or 24
     w, h = int(cap.get(3)), int(cap.get(4))
-    writer = cv2.VideoWriter(str(out_path), fourcc, fps, (w, h))
+    out_path = VID_OUT / f"{path.stem}_full_{timestamp()}.mp4"
+    writer = cv2.VideoWriter(str(out_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
 
-    ret, first_frame = cap.read()
+    # First frame → LLM + summary
+    ret, first = cap.read()
     if not ret:
-        logger.error("Could not read initial frame.")
         return
 
-    det_first = detector(first_frame)[0]
+    det_first = detector(first)[0]
+    cls_first = classifier.predict(first)
 
-    cls_raw = classifier.predict(first_frame)
-    raw_scene_label = cls_raw.label
+    fused_first = refine_scene_with_objects(cls_first.label, det_first)
+    scene_first = reason_about_scene(fused_first, det_first)
 
-    fused_label = refine_scene_with_objects(raw_scene_label, det_first)
-    scene_first = reason_about_scene(fused_label, det_first)
+    llm_text = llm_reason_from_detections(fused_first, det_first, source=str(path))
+    summary = _build_rule_summary(fused_first, scene_first, det_first, llm_text)
 
-    full_llm = llm_reason_from_detections(
-        room_label=fused_label,
-        detections=det_first,
-        source=str(path),
-        save=True,
-        print_to_console=True,
-    )
-
-    summary_sentence = _build_rule_based_summary(fused_label, scene_first, det_first, full_llm)
-
-    frame = draw_predictions(first_frame, det_first, fused_label, cls_raw.confidence, scene_first, summary_sentence)
+    frame = draw_predictions(first, det_first, fused_first, cls_first.confidence, scene_first, summary)
     writer.write(frame)
 
-    frame_count = 1
-
+    # Remaining frames (no LLM)
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        det_result = detector(frame)[0]
-        cls_raw_f = classifier.predict(frame)
+        det = detector(frame)[0]
+        cls = classifier.predict(frame)
 
-        fused_scene_label_f = refine_scene_with_objects(cls_raw_f.label, det_result)
-        scene_f = reason_about_scene(fused_scene_label_f, det_result)
+        fused = refine_scene_with_objects(cls.label, det)
+        scene = reason_about_scene(fused, det)
 
-        frame = draw_predictions(
-            frame, det_result, fused_scene_label_f, cls_raw_f.confidence, scene_f, summary_sentence
-        )
-
+        frame = draw_predictions(frame, det, fused, cls.confidence, scene, summary)
         writer.write(frame)
-        frame_count += 1
 
     cap.release()
     writer.release()
-
-    obj_counts, total_dets = _extract_object_counts(det_first)
-
-    append_json(
-        {
-            "mode": "video",
-            "input": str(path.resolve()),
-            "output": str(out_path.resolve()),
-            "timestamp": timestamp(),
-            "frames": frame_count,
-            "room_label_raw_first_frame": raw_scene_label,
-            "room_label_fused_first_frame": fused_label,
-            "room_confidence_first_frame": cls_raw.confidence,
-            "crowd_level_first_frame": scene_first.crowd_level,
-            "risk_score_first_frame": scene_first.risk_score,
-            "navigation_hint_first_frame": scene_first.navigation_hint,
-            "total_detections_first_frame": total_dets,
-            "object_counts_first_frame": dict(obj_counts),
-            "llm_full_reasoning": full_llm,
-            "summary_sentence": summary_sentence,
-        }
-    )
-
     logger.info(f"Saved video → {out_path}")
 
 
@@ -399,111 +360,66 @@ def process_video(path: Path, detector, classifier):
 # WEBCAM PROCESSING
 # ---------------------------------------------------------
 def process_webcam(detector, classifier, index: int = 0):
-    logger.info("[WEBCAM] Starting webcam (Ctrl+C to stop)")
+    logger.info("[WEBCAM] Starting webcam")
 
     cap = cv2.VideoCapture(index)
     if not cap.isOpened():
-        logger.error("Webcam cannot be accessed.")
+        logger.error("Webcam unavailable.")
         return
 
-    out_path = VID_OUT / f"webcam_full_{timestamp()}.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     fps = 30
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
-    writer = cv2.VideoWriter(str(out_path), fourcc, fps, (w, h))
+    w, h = int(cap.get(3)), int(cap.get(4))
+    out_path = VID_OUT / f"webcam_full_{timestamp()}.mp4"
+    writer = cv2.VideoWriter(str(out_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
 
-    ret, first_frame = cap.read()
+    ret, first = cap.read()
     if not ret:
-        logger.error("Could not read first webcam frame.")
         return
 
-    det_first = detector(first_frame)[0]
-    cls_raw = classifier.predict(first_frame)
-    raw_scene_label = cls_raw.label
+    det_first = detector(first)[0]
+    cls_first = classifier.predict(first)
 
-    fused_label = refine_scene_with_objects(raw_scene_label, det_first)
-    scene_first = reason_about_scene(fused_label, det_first)
+    fused_first = refine_scene_with_objects(cls_first.label, det_first)
+    scene_first = reason_about_scene(fused_first, det_first)
 
-    full_llm = llm_reason_from_detections(
-        room_label=fused_label,
-        detections=det_first,
-        source="webcam",
-        save=True,
-        print_to_console=False,
-    )
+    llm_text = llm_reason_from_detections(fused_first, det_first, source="webcam", print_to_console=False)
+    summary = _build_rule_summary(fused_first, scene_first, det_first, llm_text)
 
-    summary_sentence = _build_rule_based_summary(fused_label, scene_first, det_first, full_llm)
-
-    frame = draw_predictions(first_frame, det_first, fused_label, cls_raw.confidence, scene_first, summary_sentence)
+    frame = draw_predictions(first, det_first, fused_first, cls_first.confidence, scene_first, summary)
     writer.write(frame)
-    cv2.imshow("Unified Pipeline Webcam", frame)
+    cv2.imshow("RSAN Webcam", frame)
 
-    frame_count = 1
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            continue
 
-    try:
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                continue
+        det = detector(frame)[0]
+        cls = classifier.predict(frame)
+        fused = refine_scene_with_objects(cls.label, det)
+        scene = reason_about_scene(fused, det)
 
-            det_result = detector(frame)[0]
-            cls_raw_f = classifier.predict(frame)
+        frame = draw_predictions(frame, det, fused, cls.confidence, scene, summary)
+        writer.write(frame)
+        cv2.imshow("RSAN Webcam", frame)
 
-            fused_scene_label = refine_scene_with_objects(cls_raw_f.label, det_result)
-            scene_f = reason_about_scene(fused_scene_label, det_result)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
-            frame = draw_predictions(
-                frame, det_result, fused_scene_label, cls_raw_f.confidence, scene_f, summary_sentence
-            )
-
-            writer.write(frame)
-            cv2.imshow("Unified Pipeline Webcam", frame)
-            frame_count += 1
-
-            if cv2.waitKey(int(1000 / fps)) & 0xFF == ord("q"):
-                break
-
-    except KeyboardInterrupt:
-        logger.info("Webcam stopped by user.")
-    finally:
-        cap.release()
-        writer.release()
-        cv2.destroyAllWindows()
-
-    obj_counts, total_dets = _extract_object_counts(det_first)
-
-    append_json(
-        {
-            "mode": "webcam",
-            "input": f"webcam_index_{index}",
-            "output": str(out_path.resolve()),
-            "timestamp": timestamp(),
-            "frames": frame_count,
-            "room_label_raw_first_frame": raw_scene_label,
-            "room_label_fused_first_frame": fused_label,
-            "room_confidence_first_frame": cls_raw.confidence,
-            "crowd_level_first_frame": scene_first.crowd_level,
-            "risk_score_first_frame": scene_first.risk_score,
-            "navigation_hint_first_frame": scene_first.navigation_hint,
-            "total_detections_first_frame": total_dets,
-            "object_counts_first_frame": dict(obj_counts),
-            "llm_full_reasoning": full_llm,
-            "summary_sentence": summary_sentence,
-        }
-    )
-
-    logger.info(f"Saved webcam → {out_path}")
+    cap.release()
+    writer.release()
+    cv2.destroyAllWindows()
+    logger.info(f"Saved webcam video → {out_path}")
 
 
 # ---------------------------------------------------------
-# MAIN ROUTER
+# MAIN ENTRY
 # ---------------------------------------------------------
 def run_unified(input_path: str):
     detector, classifier = load_models()
     p = Path(input_path)
 
-    if input_path.lower() in {"webcam", "cam"}:
+    if input_path.lower() in {"cam", "webcam"}:
         return process_webcam(detector, classifier)
 
     if p.is_file() and is_image(p):
@@ -523,9 +439,6 @@ def run_unified(input_path: str):
     logger.error(f"Invalid input: {input_path}")
 
 
-# ---------------------------------------------------------
-# CLI
-# ---------------------------------------------------------
 if __name__ == "__main__":
     import sys
 
