@@ -222,3 +222,13 @@ python -m src.tools.run_unified_pipeline webcam
 outputs/full_pipeline/images/
 outputs/full_pipeline/videos/
 outputs/full_pipeline/logs/results.json
+
+---
+### Code Quality: MUST RUN Before Every Commit / Push / PR
+
+This command ensures that all Python code in the RSAN project is clean, consistent, and passes all style/lint checks.
+
+Run it **every time before pushing your code** or opening a **Pull Request**:
+
+```bash
+black . && ruff check . --fix && flake8 src/

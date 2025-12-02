@@ -1,6 +1,7 @@
 dataset_focus: "indoor"
 
-# To describe object-level scenes to the LLM
+# Optional — Helps LLM understand typical indoor objects
+# (This list does NOT control the detector. It only gives LLM context.)
 classes:
   - chair
   - bed
@@ -12,21 +13,35 @@ classes:
   - oven
   - sink
   - laptop
+  - cabinet
+  - bookshelf
+  - whiteboard
+  - microwave
+  - refrigerator
 
-model: "gpt-4.1"
-temperature: 0.4
+model: "gpt-4o-mini"     # Safe, cheap, fast
+temperature: 0.4         # Stable reasoning, avoids hallucinations
 
+# SAFE, SCALABLE TEMPLATE — works with any number of objects
 prompt_template: |
-  You are a robotic navigation expert in an indoor environment.
+  You are a robotic navigation expert assisting a mobile robot indoors.
 
-  Room type: {room_label}
-  Detected objects: {objects}
+  Room type (from indoor classifier):
+  {room_label}
 
-  Using this information, describe:
+  Detected objects (from YOLO):
+  {detection_summary}
 
-  1. The key objects and what they imply about the scene.
-  2. Any social cues (crowds, privacy, typical human activities).
-  3. Possible navigation hazards.
-  4. A short, concrete navigation recommendation for a mobile robot.
+  Use ONLY the information above.
+  Do NOT invent objects that are not listed.
 
-  Be concise but specific (4–6 sentences).
+  Your tasks:
+    1. Summarize what the key detected objects imply about the environment.
+    2. Identify any social cues (crowds, privacy, human activities).
+    3. Identify any navigation hazards (tight spaces, obstacles, visibility issues).
+    4. Provide a concise, concrete navigation recommendation for the robot.
+
+  Requirements:
+    • 4–6 sentences total.
+    • Precise, safe, and practical for navigation.
+    • Never hallucinate objects or room types.
