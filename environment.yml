@@ -5,41 +5,87 @@ channels:
   - defaults
 
 dependencies:
+  # ======================================================
+  # 1. CORE PYTHON
+  # ======================================================
   - python=3.10
   - pip
 
-  # ---- PyTorch (auto-select correct build) ----
+  # ======================================================
+  # 2. PYTORCH STACK (safe for Mac M1/M2/M3 + Linux)
+  # ======================================================
   - pytorch=2.5.1
   - torchvision=0.20.1
   - torchaudio=2.5.1
 
-  # ---- Core scientific stack ----
-  - numpy
-  - scipy
-  - scikit-learn
-  - scikit-image
-  - pandas
-  - matplotlib
-  - tqdm
+  # ======================================================
+  # 3. SCIENTIFIC STACK (versions matched to YOLO & Torch)
+  # ======================================================
+  - numpy=2.2.6
+  - scipy=1.14.1
+  - scikit-learn=1.5.2
+  - scikit-image=0.25.2
+  - pandas=2.2.3
+  - matplotlib=3.10.7
+  - tqdm=4.66.5
 
-  # ---- Utils and CV ----
-  - pillow
-  - opencv
+  # ======================================================
+  # 4. COMPUTER VISION (safe OpenCV version)
+  # ======================================================
+  - pillow=10.4.0
+  - opencv=4.10.0
 
-  # ---- MongoDB ----
-  - pymongo
-  - mongoengine
-  - motor
+  # ======================================================
+  # 5. DATABASE (MongoDB)
+  # ======================================================
+  - pymongo=4.9.2
+  - mongoengine=0.29.1
+  - motor=3.6.1
 
-  # ---- Other tools ----
+  # ======================================================
+  # 6. PIP-ONLY PACKAGES (must be pinned)
+  # ======================================================
   - pip:
-      - ultralytics
-      - fiftyone
-      - python-dotenv
-      - requests
-      - rich
-      - pyyaml
-      - plotly
-      - ftfy
-      - imageio
-      - rtree
+      # -------------------------------------
+      # YOLO STACK (must stay pinned)
+      # -------------------------------------
+      - ultralytics==8.3.228
+      - ultralytics-thop==2.0.18
+
+      # -------------------------------------
+      # FIFTYONE ECOSYSTEM (all pinned)
+      # -------------------------------------
+      - fiftyone==1.8.1
+      - fiftyone-brain==0.21.4
+      - fiftyone_db==1.4.0
+      - voxel51-eta==0.15.1
+
+      # -------------------------------------
+      # LLM SAFETY + OPENAI SDK
+      # -------------------------------------
+      - openai==1.53.0
+      - python-dotenv==1.0.1
+      - httpx==0.28.1
+      - requests==2.32.3
+
+      # -------------------------------------
+      # YAML / JSON utilities
+      # -------------------------------------
+      - pyyaml==6.0.2
+      - jsonlines==4.0.0
+      - tabulate==0.9.0
+
+      # -------------------------------------
+      # Vision / Misc Utils
+      # -------------------------------------
+      - ftfy==6.3.1
+      - imageio==2.37.2
+      - rtree==1.4.1
+
+      # -------------------------------------
+      # DEVELOPMENT QUALITY & LINTING
+      # -------------------------------------
+      - black==25.11.0
+      - flake8==7.3.0
+      - ruff==0.7.0
+      - rich==13.9.2
