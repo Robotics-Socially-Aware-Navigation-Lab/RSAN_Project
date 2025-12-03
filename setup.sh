@@ -1,72 +1,90 @@
 #!/usr/bin/env bash
 # ================================================================
-# RSAN_Project - Smart Environment Setup Script
+# RSAN_Project - Smart Environment Setup Script (AUTO-RECREATE)
 # Author: Robotics Socially Aware Navigation Lab (RSAN Lab)
-# Purpose: Automatically sets up and verifies the development
-#          environment for any team member (Mac, Linux, Windows via WSL)
+# Purpose: Guaranteed consistent environment for ALL teammates:
+#          • Mac (Intel / M1 / M2 / M3)
+#          • Linux
+#          • Windows (WSL)
 # ================================================================
 
-# Detect Operating System
-echo "Detecting your operating system..."
+echo "-----------------------------------------------------"
+echo "   RSAN PROJECT — SMART ENVIRONMENT SETUP"
+echo "-----------------------------------------------------"
+
+# Detect OS
 OS="unknown"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     OS="Linux"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS="Mac"
-elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+elif [[ "$OSTYPE" == *"msys"* || "$OSTYPE" == *"cygwin"* ]]; then
     OS="Windows"
 fi
 echo "Detected OS: $OS"
 
-# Check for Conda
+# ------------------------------------------------------
+# Detect Conda
+# ------------------------------------------------------
 if command -v conda &>/dev/null; then
-    echo "Conda detected — using Conda environment setup."
+    echo "Conda detected — using Conda for environment setup."
     USE_CONDA=true
 else
-    echo "Conda not found. Falling back to Python venv setup."
+    echo "Conda NOT found — using Python venv fallback."
     USE_CONDA=false
 fi
 
-# Create Environment
+# ------------------------------------------------------
+# Create (or RECREATE) Environment
+# ------------------------------------------------------
+ENV_NAME="rsan_env"
+
 if [ "$USE_CONDA" = true ]; then
-    ENV_NAME="rsan_env"
-    echo "Checking if Conda environment '$ENV_NAME' already exists..."
+    echo ""
+    echo "Checking for existing environment '$ENV_NAME'..."
+
     if conda info --envs | grep -q "$ENV_NAME"; then
-        echo "Environment '$ENV_NAME' already exists. Skipping creation."
+        echo "Environment exists — removing for a clean rebuild..."
+        conda env remove -n "$ENV_NAME" -y
     else
-        echo "Creating Conda environment from environment.yml..."
-        conda env create -f environment.yml || {
-            echo "Conda environment creation failed!"
-            exit 1
-        }
+        echo "No previous environment found."
     fi
 
-    echo "Activating Conda environment..."
+    echo "Creating fresh Conda environment from environment.yml..."
+    conda env create -f environment.yml || {
+        echo "❌ FAILED to create conda environment!"
+        exit 1
+    }
+
+    echo "Activating environment..."
     eval "$(conda shell.bash hook)"
     conda activate "$ENV_NAME"
 
 else
+    # ------------------------------
     # Python venv fallback
-    echo "Creating virtual environment using Python venv..."
-    
-    if command -v python3 &>/dev/null; then
-        PYTHON_CMD="python3"
-    else
-        PYTHON_CMD="python"
-    fi
+    # ------------------------------
+    echo ""
+    echo "Using Python venv fallback..."
 
-    $PYTHON_CMD -m venv env
+    echo "Removing old virtual env..."
+    rm -rf env
+
+    echo "Creating new virtual environment..."
+    python3 -m venv env
     source env/bin/activate
-    echo "Virtual environment activated."
 
-    echo "Installing dependencies (pip fallback)..."
+    echo "Installing dependencies (requirements.txt)..."
     pip install --upgrade pip
-    pip install ultralytics fiftyone python-dotenv requests pyyaml rich plotly ftfy imageio rtree pymongo mongoengine motor scikit-learn scikit-image opencv-python pillow
+    pip install -r requirements.txt
 fi
 
-# Verify Installation
+# ------------------------------------------------------
+# VERIFY INSTALLATION
+# ------------------------------------------------------
 echo ""
-echo "Verifying key libraries..."
+echo "Verifying core libraries..."
+
 python - <<'EOF'
 import torch, cv2, fiftyone, numpy
 print("\n RSAN environment verification successful!")
@@ -77,20 +95,17 @@ print(f"Numpy: {numpy.__version__}")
 EOF
 
 echo ""
-echo "Skipping environment export to maintain cross-platform compatibility."
-
-# Final Message
-echo ""
-echo " RSAN_Project environment setup complete!"
-echo "---------------------------------------------------"
+echo "-----------------------------------------------------"
+echo "  RSAN_Project environment setup COMPLETE 🎉"
+echo "-----------------------------------------------------"
 if [ "$USE_CONDA" = true ]; then
-    echo "To activate later:  conda activate rsan_env"
+    echo "To activate later:   conda activate rsan_env"
 else
-    echo "To activate later:  source env/bin/activate"
+    echo "To activate later:   source env/bin/activate"
 fi
-echo "---------------------------------------------------"
+echo "-----------------------------------------------------"
 echo "Next steps:"
-echo "1️⃣ Run notebooks in 'colab/' or Python files in 'src/'."
-echo "2️⃣ Use GitHub Actions for automated formatting and linting."
-echo "3️⃣ Have fun building socially aware robots 🤖"
-echo "---------------------------------------------------"
+echo " 1️⃣ Run: python -m src.tools.run_unified_pipeline image.jpg"
+echo " 2️⃣ Or   python -m src.tools.run_unified_pipeline webcam"
+echo " 3️⃣ Make sure OPENAI_API_KEY is set if you want LLM reasoning."
+echo "-----------------------------------------------------"
