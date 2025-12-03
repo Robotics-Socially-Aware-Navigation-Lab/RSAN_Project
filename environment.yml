@@ -12,14 +12,18 @@ dependencies:
   - pip
 
   # ======================================================
-  # 2. PYTORCH STACK (safe for Mac M1/M2/M3 + Linux)
+  # 2. PYTORCH STACK (cross-platform, SAFE)
+  # ------------------------------------------------------
+  # cpuonly = prevents GPU / architecture mismatch crashes
+  # torchvision 0.20.1 = correct for PyTorch 2.5.1
   # ======================================================
+  - cpuonly
   - pytorch=2.5.1
   - torchvision=0.20.1
   - torchaudio=2.5.1
 
   # ======================================================
-  # 3. SCIENTIFIC STACK (versions matched to YOLO & Torch)
+  # 3. SCIENTIFIC STACK
   # ======================================================
   - numpy=2.2.6
   - scipy=1.14.1
@@ -30,10 +34,13 @@ dependencies:
   - tqdm=4.66.5
 
   # ======================================================
-  # 4. COMPUTER VISION (safe OpenCV version)
+  # 4. COMPUTER VISION
+  # ------------------------------------------------------
+  # opencv from conda is 100× safer than pip wheels
+  # avoids segmentation faults on Intel Macs
   # ======================================================
   - pillow=10.4.0
-  - opencv=4.10.0
+  - opencv
 
   # ======================================================
   # 5. DATABASE (MongoDB)
@@ -43,17 +50,17 @@ dependencies:
   - motor=3.6.1
 
   # ======================================================
-  # 6. PIP-ONLY PACKAGES (must be pinned)
+  # 6. PIP-ONLY PACKAGES (pinned for safety)
   # ======================================================
   - pip:
       # -------------------------------------
-      # YOLO STACK (must stay pinned)
+      # YOLO STACK
       # -------------------------------------
       - ultralytics==8.3.228
       - ultralytics-thop==2.0.18
 
       # -------------------------------------
-      # FIFTYONE ECOSYSTEM (all pinned)
+      # FIFTYONE ECOSYSTEM
       # -------------------------------------
       - fiftyone==1.8.1
       - fiftyone-brain==0.21.4
@@ -61,7 +68,7 @@ dependencies:
       - voxel51-eta==0.15.1
 
       # -------------------------------------
-      # LLM SAFETY + OPENAI SDK
+      # LLM / OPENAI SDK
       # -------------------------------------
       - openai==1.53.0
       - python-dotenv==1.0.1
@@ -69,21 +76,21 @@ dependencies:
       - requests==2.32.3
 
       # -------------------------------------
-      # YAML / JSON utilities
+      # YAML + JSON
       # -------------------------------------
       - pyyaml==6.0.2
       - jsonlines==4.0.0
       - tabulate==0.9.0
 
       # -------------------------------------
-      # Vision / Misc Utils
+      # Vision / Misc Utilities
       # -------------------------------------
       - ftfy==6.3.1
       - imageio==2.37.2
       - rtree==1.4.1
 
       # -------------------------------------
-      # DEVELOPMENT QUALITY & LINTING
+      # DEVELOPMENT (linting + formatting)
       # -------------------------------------
       - black==25.11.0
       - flake8==7.3.0
