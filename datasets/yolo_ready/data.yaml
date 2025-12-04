@@ -1,14 +1,71 @@
-# Indoor Scene Classification Dataset for YOLOv8-CLS
+# # Indoor Scene Classification Dataset for YOLOv8-CLS
 
-path: ../indoor_scenes_cls     # base directory of the dataset
+# path: ../indoor_scenes_cls     # base directory of the dataset
 
-train: train
-val: val
+# train: train
+# val: val
 
-names:
-  0: classroom
-  1: hallway
-  2: lab
-  3: office
+# names:
+#   0: classroom
+#   1: hallway
+#   2: lab
+#   3: office
 
-nc: 4
+# nc: 4
+
+room_types:
+
+  # CORE ROOMS (currently in classifier)
+  - classroom
+  - hallway
+  - lab
+  - office
+
+  # HOME ENVIRONMENTS
+  - bedroom
+  - livingroom
+  - kitchen
+  - bathroom
+
+  # SCHOOL / UNIVERSITY ENVIRONMENTS
+  - lobby
+  - common_area
+  - corridor
+  - study_room
+  - library
+  - auditorium
+  - cafeteria
+  - computer_lab
+
+  # WORK & ENTERPRISE SPACES
+  - meeting_room
+  - conference_room
+  - reception_area
+  - break_room
+  - storage_room
+
+  # BUILDING UTILITY AREAS
+  - elevator_lobby
+  - stairwell
+  - mechanical_room
+  - electrical_room
+  - server_room
+  - maintenance_room
+
+  # SOCIAL / PUBLIC AREAS
+  - lounge
+  - waiting_area
+  - cafe
+  - small_shop
+  - rest_area
+
+  # HAZARD-PRONE AREAS
+  - workshop
+  - kitchen_backroom
+  - tool_room
+  - janitor_closet
+  - chemical_storage
+
+  # DEFAULT / UNKNOWN CLASSES
+  - unknown
+  - uncertain

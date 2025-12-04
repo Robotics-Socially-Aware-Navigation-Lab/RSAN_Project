@@ -109,7 +109,7 @@ def _crowd_multiplier(crowd_level: str) -> float:
 
 
 # -----------------------------------------------------------
-# NEW: ROBUST, SCALABLE NAVIGATION HINT FUNCTION
+# SCALABLE NAVIGATION HINT FUNCTION
 # -----------------------------------------------------------
 def _compose_navigation_hint(room: str, object_names: Sequence[str], crowd_level: str) -> str:
     """
@@ -164,7 +164,7 @@ def _compose_navigation_hint(room: str, object_names: Sequence[str], crowd_level
         return "Office detected. Move at low speed and maintain predictable motion."
 
     # -------------------------------------------------------
-    # 3. FUTURE-PROOF GENERIC RULES FOR UNKNOWN ROOMS
+    # 3. GENERIC RULES FOR UNKNOWN ROOMS
     # -------------------------------------------------------
     hazards = {
         "stove",
