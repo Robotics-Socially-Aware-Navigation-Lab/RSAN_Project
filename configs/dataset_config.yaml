@@ -1,2 +1,120 @@
 dataset_focus: "indoor"
-classes: ["chair","bed","couch","tv","potted plant","dining table","toilet","oven","sink","laptop"]
+
+classes:
+  # PEOPLE
+  - person
+
+  # FURNITURE
+  - chair
+  - desk
+  - table
+  - dining table
+  - couch
+  - sofa
+  - bench
+  - bed
+  - nightstand
+  - dresser
+  - wardrobe
+  - bookshelf
+  - cabinet
+  - shelf
+  - coffee table
+  - stool
+
+  # ELECTRONICS / COMPUTERS
+  - monitor
+  - computer
+  - laptop
+  - keyboard
+  - mouse
+  - printer
+  - projector
+  - tv
+  - screen
+  - speaker
+  - phone
+
+  # KITCHEN APPLIANCES
+  - refrigerator
+  - fridge
+  - microwave
+  - oven
+  - stove
+  - toaster
+  - kettle
+  - blender
+  - sink
+
+  # BATHROOM ITEMS
+  - toilet
+  - bathtub
+  - shower
+  - towel
+  - toothbrush
+  - toothpaste
+  - soap
+  - shampoo
+  - faucet
+
+  # GENERAL OBJECTS
+  - whiteboard
+  - blackboard
+  - door
+  - window
+  - plant
+  - potted plant
+  - lamp
+  - fan
+  - rug
+  - curtain
+  - mirror
+  - clock
+  - trash can
+  - backpack
+  - handbag
+  - book
+  - notebook
+  - poster
+  - sign
+
+  # KITCHENWARE / UTENSILS
+  - pot
+  - pan
+  - plate
+  - bowl
+  - cup
+  - bottle
+  - fork
+  - spoon
+  - knife
+  - cutting board
+
+  # LAB / OFFICE / SCHOOL SUPPLIES
+  - marker
+  - eraser
+  - pen
+  - pencil
+  - paper
+  - coffee cup
+
+  # CAFETERIA / FOOD
+  - tray
+  - menu
+  - food
+  - napkin
+
+  # HAZARDS / RISK OBJECTS
+  - fire extinguisher
+  - equipment
+  - cable
+  - cord
+  - ladder
+  - glass
+
+  # NAVIGATION-RELEVANT LAYOUT OBJECTS
+  - sign
+  - stage
+  - podium
+  - screen
+  - counter

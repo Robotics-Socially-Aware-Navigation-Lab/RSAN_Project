@@ -110,29 +110,70 @@ def _extract_object_counts(det_result) -> Tuple[Counter, int]:
 # ---------------------------------------------------------
 def refine_scene_with_objects(raw_label: str, det_result) -> str:
     """
-    Universal Hybrid Fusion:
-    Uses YOLO objects to refine indoor classification.
-    Works for unlimited classes via JSON file.
+    HYBRID FUSION: Improve indoor scene classification using YOLO detections.
+
+    WHY THIS EXISTS:
+        YOLOv8-CLS sometimes mislabels scenes because it only sees the entire
+        image as a single classification problem. But YOLO object detection
+        provides fine-grained clues about what objects are actually present.
+
+        Example:
+            Indoor classifier predicts: "hallway" (weak confidence)
+            YOLO detects: chair, desk, whiteboard → This looks like a CLASSROOM.
+
+        This function uses a JSON mapping (ROOM_OBJECT_MAP) to match detected
+        objects to typical room types and correct the classifier output.
+
+    HOW IT WORKS:
+        1. Extract all detected object names from YOLO.
+        2. For each room type (office, classroom, hallway, etc.):
+               Count how many of its expected objects appear in the frame.
+        3. Pick the room with the highest match score.
+        4. Only override the classifier label if at least TWO objects match.
+           (This avoids random single-object misfires.)
+
+    PARAMETERS:
+        raw_label  → The original room prediction from YOLOv8-CLS.
+        det_result → YOLO detection result, containing bounding boxes & classes.
+
+    RETURNS:
+        A refined room label (string). May be the same as raw_label if
+        object evidence is insufficient.
     """
+
+    # Safety check: if YOLO returned nothing, keep the original label.
     if det_result is None or det_result.boxes is None:
         return raw_label
 
+    # Extract YOLO class names (e.g., "chair", "tv") for each detected object.
     names = det_result.names
     cls_ids = det_result.boxes.cls.cpu().numpy().astype(int)
+
+    # Convert detected object class IDs → lowercase name set for fast matching.
     detected = {names[int(cid)].lower() for cid in cls_ids}
 
+    # Initialize fusion variables: best guess begins as the raw classifier label.
     best_label = raw_label
     best_score = 0
 
+    # ROOM_OBJECT_MAP: dict where each room has a list of typical objects.
+    # Example:
+    #   "office": ["desk", "chair", "monitor"]
+    #   "kitchen": ["oven", "microwave", "sink"]
+    #
+    # For each room, count how many "expected" objects are present.
     for room, keywords in ROOM_OBJECT_MAP.items():
-        score = len(detected & set(keywords))
+        score = len(detected & set(keywords))  # intersection match count
+
+        # Track the highest-scoring room based on object evidence.
         if score > best_score:
             best_score = score
             best_label = room
 
-    # Require ≥ 2 matching items to override
+    # IMPORTANT RULE:
+    # Do NOT override the classifier unless >= 2 matching objects are found.
+    # This avoids making wild jumps because a single object appeared.
     return best_label if best_score >= 2 else raw_label
-
 
 # ---------------------------------------------------------
 # BUILD RULE-BASED SUMMARY
