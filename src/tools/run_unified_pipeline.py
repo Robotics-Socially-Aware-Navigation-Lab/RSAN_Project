@@ -175,6 +175,7 @@ def refine_scene_with_objects(raw_label: str, det_result) -> str:
     # This avoids making wild jumps because a single object appeared.
     return best_label if best_score >= 2 else raw_label
 
+
 # ---------------------------------------------------------
 # BUILD RULE-BASED SUMMARY
 # ---------------------------------------------------------
