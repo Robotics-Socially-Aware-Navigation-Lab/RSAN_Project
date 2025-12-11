@@ -74,6 +74,7 @@ log = get_logger(__name__)
 #   only outputs 11 logits because it was trained on 11 classes.
 #   Adding names here without retraining will break the classifier.
 # ================================================================
+
 MIT_CLASS_NAMES: List[str] = [
     "bathroom",
     "bedroom",
@@ -114,7 +115,7 @@ class PlacesMITMultiHead(nn.Module):
         mit_head     → fine-tuned MIT indoor classifier
     """
 
-    ### This line inserts the trained weights into the architecture.
+    # This line inserts the trained weights into the architecture.
     # Before this, the model knows nothing.
 
     # The .pth file contains trained values for:
@@ -122,7 +123,6 @@ class PlacesMITMultiHead(nn.Module):
     # The Places365 head
     # The MIT indoor head
     # These weights come from your training notebook.
-
 
     def __init__(self, num_mit_classes: int):
         super().__init__()
@@ -146,10 +146,11 @@ class PlacesMITMultiHead(nn.Module):
 
         # Run the features through BOTH heads
         places_logits = self.places_head(feats)  # size: [batch, 365]
-        mit_logits = self.mit_head(feats)        # size: [batch, 11]
+        mit_logits = self.mit_head(feats)  # size: [batch, 11]
 
         # Return BOTH outputs
         return places_logits, mit_logits
+
 
 # ================================================================
 # Helper: load Places365 label names from categories_places365.txt
@@ -370,7 +371,7 @@ class IndoorClassifier:
         # ------------------------------------------------------------------
         with torch.no_grad():
 
-            ######## Do the call to self.model here #########
+            # Do the call to self.model here #
             places_logits, mit_logits = self.model(x)
 
             # Convert the outputs into probabilities (0–1)
@@ -426,10 +427,7 @@ class IndoorClassifier:
 
         # Create a dictionary of MIT class probabilities
         # (this is useful for debugging and charts)
-        mit_prob_dict: Dict[str, float] = {
-            MIT_CLASS_NAMES[i]: float(mit_probs[i])
-            for i in range(NUM_MIT_CLASSES)
-        }
+        mit_prob_dict: Dict[str, float] = {MIT_CLASS_NAMES[i]: float(mit_probs[i]) for i in range(NUM_MIT_CLASSES)}
 
         # Extra debug info: shows which model we trusted and why
         raw_info = {
@@ -440,11 +438,12 @@ class IndoorClassifier:
 
         # Return everything to the rest of the system
         return IndoorClassificationResult(
-            label=final_label,       # The final room/environment name
-            confidence=final_conf,   # How confident the model is
-            probs=mit_prob_dict,     # MIT probabilities (11 values)
-            raw=raw_info,            # Debug info (useful for logs)
+            label=final_label,  # The final room/environment name
+            confidence=final_conf,  # How confident the model is
+            probs=mit_prob_dict,  # MIT probabilities (11 values)
+            raw=raw_info,  # Debug info (useful for logs)
         )
+
 
 # ================================================================
 # Singleton Interface (RSAN expects these names)
