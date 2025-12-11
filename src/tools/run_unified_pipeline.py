@@ -230,7 +230,20 @@ def process_image(path: Path, detector, classifier):
 # =============================================================
 # Main processing (video)
 # =============================================================
-def process_video(path: Path, detector, classifier):
+# =============================================================
+# Main processing (video)
+# =============================================================
+def process_video(path: Path, detector, classifier, step_seconds: float = 2.0):
+    """
+    Full unified pipeline for a video:
+      - YOLO object detection every frame
+      - Indoor scene classifier every `step_seconds`
+      - Hybrid scene fusion + symbolic/LLM reasoning
+      - Annotated video output
+
+    The classifier result (label + confidence + scene reasoning)
+    is reused for intermediate frames between classification steps.
+    """
     logger.info(f"[VIDEO] {path}")
     cap = cv2.VideoCapture(str(path))
 
@@ -240,8 +253,14 @@ def process_video(path: Path, detector, classifier):
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 24
     w, h = int(cap.get(3)), int(cap.get(4))
-    out_path = VID_OUT / f"{path.stem}_full_{timestamp()}.mp4"
 
+    # How often to run scene classification
+    frame_interval = max(1, int(fps * step_seconds))
+    logger.info(
+        f"Video FPS={fps:.2f} – running scene classifier every " f"{frame_interval} frames (~{step_seconds:.1f}s)"
+    )
+
+    out_path = VID_OUT / f"{path.stem}_full_{timestamp()}.mp4"
     writer = cv2.VideoWriter(
         str(out_path),
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -249,40 +268,78 @@ def process_video(path: Path, detector, classifier):
         (w, h),
     )
 
+    # Read first frame
     ret, first = cap.read()
     if not ret:
+        logger.error("Could not read first frame.")
+        cap.release()
         return
 
-    det_first = detector.detect(first)
-    cls_first = classifier.predict(first)
+    frame_idx = 0
 
-    fused_first = refine_scene_with_objects(cls_first.label, det_first, cls_first.confidence)
-    scene_first = reason_about_scene(fused_first, det_first)
+    # First frame: always run full pipeline
+    det = detector.detect(first)
+    cls = classifier.predict(first)
 
-    summary = llm_reason_from_detections(fused_first, det_first, source=str(path))
+    fused_label = refine_scene_with_objects(cls.label, det, cls.confidence)
+    scene_reasoning = reason_about_scene(fused_label, det)
+
+    # One summary for the whole video
+    summary = llm_reason_from_detections(
+        fused_label,
+        det,
+        source=str(path),
+        print_to_console=False,
+    )
+
+    # Cache current scene info to reuse on intermediate frames
+    current_label = fused_label
+    current_conf = cls.confidence
+    current_scene = scene_reasoning
 
     frame = first.copy()
-    frame = draw_detections(frame, det_first)
-    frame = draw_scene_annotations(frame, fused_first, cls_first.confidence, scene_first, summary)
+    frame = draw_detections(frame, det)
+    frame = draw_scene_annotations(frame, current_label, current_conf, current_scene, summary)
     writer.write(frame)
 
+    frame_idx += 1
+
+    # Main loop
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
+        # Always run object detection every frame
         det = detector.detect(frame)
-        cls = classifier.predict(frame)
-        fused = refine_scene_with_objects(cls.label, det, cls.confidence)
-        scene = reason_about_scene(fused, det)
 
-        frame = draw_detections(frame, det)
-        frame = draw_scene_annotations(frame, fused, cls.confidence, scene, summary)
-        writer.write(frame)
+        # Only refresh scene classifier periodically
+        if frame_idx % frame_interval == 0:
+            cls = classifier.predict(frame)
+            fused_label = refine_scene_with_objects(cls.label, det, cls.confidence)
+            scene_reasoning = reason_about_scene(fused_label, det)
+
+            current_label = fused_label
+            current_conf = cls.confidence
+            current_scene = scene_reasoning
+
+        # Draw using the most recent scene info
+        frame_annot = frame.copy()
+        frame_annot = draw_detections(frame_annot, det)
+        frame_annot = draw_scene_annotations(
+            frame_annot,
+            current_label,
+            current_conf,
+            current_scene,
+            summary,
+        )
+
+        writer.write(frame_annot)
+        frame_idx += 1
 
     cap.release()
     writer.release()
-    logger.info(f"Saved video → {out_path}")
+    logger.info(f"Saved unified video → {out_path}")
 
 
 # =============================================================
