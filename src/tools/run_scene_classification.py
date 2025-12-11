@@ -182,18 +182,13 @@ def classify_image(path: Path, clf: IndoorClassifier):
 # ============================================================
 
 
-def classify_video(path: Path, clf: IndoorClassifier):
+def classify_video(path: Path, clf: IndoorClassifier, step_seconds: float = 2.0):
     """
-    Classify every frame of a video.
+    Classify a video using the indoor scene classifier.
 
-    Steps per frame:
-        1. Read frame
-        2. Predict scene label
-        3. Annotate frame
-        4. Write to output video
-
-    After finishing:
-        - Save frame-by-frame predictions to JSON
+    - Runs the classifier roughly every `step_seconds`
+    - Reuses the last prediction for intermediate frames
+    - Writes an annotated video and a per-frame JSON log
     """
     logger.info(f"[VIDEO] Classifying video: {path}")
 
@@ -206,45 +201,52 @@ def classify_video(path: Path, clf: IndoorClassifier):
     width = int(cap.get(3))
     height = int(cap.get(4))
 
+    # How often to run the classifier in frames
+    frame_interval = max(1, int(fps * step_seconds))
+    logger.info(
+        f"Video FPS={fps:.2f} – running scene classifier every " f"{frame_interval} frames (~{step_seconds:.1f}s)"
+    )
+
     out_path = VIDEO_OUT_DIR / f"{path.stem}_classified_{timestamp()}.mp4"
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out_vid = cv2.VideoWriter(str(out_path), fourcc, fps, (width, height))
 
     frame_results = []
     frame_idx = 0
+    last_result = None  # cache last prediction
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Indoor scene prediction
-        result = clf.predict(frame)
+        # Only run classifier every N frames
+        if frame_idx % frame_interval == 0 or last_result is None:
+            last_result = clf.predict(frame)
+
+        result = last_result
 
         # Save annotated frame
         annotated = annotate_image(frame.copy(), result.label, result.confidence)
         out_vid.write(annotated)
 
-        # Store per-frame data
-        frame_results.append({"frame": frame_idx, "label": result.label, "confidence": result.confidence})
+        # Store per-frame data (include time in seconds for convenience)
+        frame_time = frame_idx / fps
+        frame_results.append(
+            {
+                "frame": frame_idx,
+                "time_sec": frame_time,
+                "label": result.label,
+                "confidence": result.confidence,
+            }
+        )
 
         frame_idx += 1
 
     cap.release()
     out_vid.release()
 
-    # Store JSON entry
-    record = {
-        "type": "video",
-        "input": str(path.resolve()),
-        "output": str(out_path.resolve()),
-        "frames": frame_idx,
-        "frame_results": frame_results,
-        "timestamp": timestamp(),
-    }
-    save_result_record(record)
-
-    logger.info(f"[SAVED] → {out_path}")
+    logger.info(f"Saved annotated video to {out_path}")
 
 
 # ============================================================

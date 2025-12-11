@@ -88,6 +88,29 @@ MIT_CLASS_NAMES: List[str] = [
     "living_room",
     "office",
 ]
+
+ALLOWED_PLACES_CLASSES = [  # this order does not matter, just make sure it exists in places365 (github)
+    "office",
+    "corridor",
+    "classroom",
+    "kitchen",
+    "bathroom",
+    "library",
+    "living_room",
+    "dining_room",
+    "computer_room",
+    "cafeteria",
+    "lobby",
+    "auditorium",
+    "banquet_hall",
+    "library/indoor",
+    "bedroom",
+    "church/indoor",
+    "conference_room",
+    "dining_hall",
+    "garage/indoor",
+]
+
 NUM_MIT_CLASSES = len(MIT_CLASS_NAMES)
 
 
@@ -285,6 +308,22 @@ class IndoorClassifier:
         log.info("[IndoorClassifier] Loaded %d Places365 class names.", len(self.places_class_names))
 
         # ------------------------------------------------------------
+        # Build a list of indices for the allowed Places365 classes
+        # ------------------------------------------------------------
+        # We only want to consider a subset of the 365 classes.
+        # The names in ALLOWED_PLACES_CLASSES must exactly match
+        # the entries in self.places_class_names.
+        self.allowed_places_indices: List[int] = [
+            i for i, name in enumerate(self.places_class_names) if name in ALLOWED_PLACES_CLASSES
+        ]
+
+        if not self.allowed_places_indices:
+            log.warning(
+                "[IndoorClassifier] No allowed Places365 classes matched. " "Falling back to using ALL 365 classes."
+            )
+            self.allowed_places_indices = list(range(len(self.places_class_names)))
+
+        # ------------------------------------------------------------
         # Build the neural network + load the trained weights (.pth file)
         # ------------------------------------------------------------
         # 1. Create the model architecture (empty model, random weights)
@@ -389,8 +428,17 @@ class IndoorClassifier:
         mit_best_conf = float(mit_probs[mit_best_idx])
 
         # ---------------- Places365 head (365 environment classes) --------
-        # Pick the Places label with the highest probability.
-        places_best_idx = int(torch.argmax(places_probs))
+        # Pick the Places label with the highest probability,
+        # but only among ALLOWED_PLACES_CLASSES.
+        if self.allowed_places_indices:
+            # Only consider allowed classes
+            subset_probs = places_probs[self.allowed_places_indices]
+            best_local_idx = int(torch.argmax(subset_probs))
+            places_best_idx = self.allowed_places_indices[best_local_idx]
+        else:
+            # Fallback – should not happen in normal use
+            places_best_idx = int(torch.argmax(places_probs))
+
         places_best_label = self.places_class_names[places_best_idx]
         places_best_conf = float(places_probs[places_best_idx])
 
