@@ -42,8 +42,39 @@ log = get_logger(__name__)
 
 # ================================================================
 # MIT INDOOR CLASS LABELS
-# MUST match EXACT order used during fine-tuning
+# ---------------------------------------------------------------
+# PURPOSE:
+#   This list contains the names of the indoor room types that the
+#   MIT head of our classifier was trained to recognize.
+#
+#   Each item in this list corresponds to one output neuron in the
+#   MIT classification head (the "mit_head" in PlacesMITMultiHead).
+#
+# WHY ORDER MATTERS:
+#   During training, the model learned the classes in THIS exact
+#   order. The output index (0–10) coming from the MIT head must
+#   match the correct name in this list. If the order changes,
+#   predictions will map to the WRONG labels.
+#
+# WHERE IT IS USED:
+#   • In IndoorClassifier.predict() → converting the MIT index
+#     (argmax) into a human-readable room label.
+#
+#       Example:
+#         mit_best_idx = 2
+#         label = MIT_CLASS_NAMES[2] → "classroom"
+#
+#   • In the probability dictionary returned to the pipeline.
+#
+#   • Used by downstream components (scene context, LLM reasoning,
+#     HUD text) to understand and describe the predicted room.
+#
+# IMPORTANT:
+#   Do NOT add new labels unless you retrain the model. The MIT head
+#   only outputs 11 logits because it was trained on 11 classes.
+#   Adding names here without retraining will break the classifier.
 # ================================================================
+
 MIT_CLASS_NAMES: List[str] = [
     "bathroom",
     "bedroom",
@@ -84,26 +115,40 @@ class PlacesMITMultiHead(nn.Module):
         mit_head     → fine-tuned MIT indoor classifier
     """
 
+    # This line inserts the trained weights into the architecture.
+    # Before this, the model knows nothing.
+
+    # The .pth file contains trained values for:
+    # The ResNet backbone
+    # The Places365 head
+    # The MIT indoor head
+    # These weights come from your training notebook.
+
     def __init__(self, num_mit_classes: int):
         super().__init__()
 
-        # ResNet50 configured for 365 Places classes
+        # Load ResNet50 with 365 output neurons (Places-style)
         self.backbone = models.resnet50(num_classes=365)
         in_features = self.backbone.fc.in_features
 
-        # Replace final layer with Identity → feature vector
+        # Remove the final classification layer to get feature vectors
         self.backbone.fc = nn.Identity()
 
-        # Places365 head (kept for hybrid fusion)
+        # Places365 classification head (365 classes)
         self.places_head = nn.Linear(in_features, 365)
 
-        # MIT indoor head (fine-tuned)
+        # MIT classification head (The 11 indoor classes)
         self.mit_head = nn.Linear(in_features, num_mit_classes)
 
     def forward(self, x):
+        # Pass input through ResNet backbone → get feature vector
         feats = self.backbone(x)
-        places_logits = self.places_head(feats)
-        mit_logits = self.mit_head(feats)
+
+        # Run the features through BOTH heads
+        places_logits = self.places_head(feats)  # size: [batch, 365]
+        mit_logits = self.mit_head(feats)  # size: [batch, 11]
+
+        # Return BOTH outputs
         return places_logits, mit_logits
 
 
@@ -162,14 +207,12 @@ def _load_places365_labels(path: Path) -> List[str]:
 # ================================================================
 class IndoorClassifier:
     """
-    Hybrid MIT + Places365 indoor scene classifier.
-
-    Loads:
-        - model weights from project_paths.yaml → paths.indoor_classifier_model
-        - Places365 label file from paths.places365_labels
-
-    Exposes:
-        .predict(frame: np.ndarray) → IndoorClassificationResult
+    This class is our indoor scene classifier.
+    It combines two prediction systems:
+        • MIT Indoor (11 indoor rooms)
+        • Places365 (365 general scenes)
+    It loads the trained model (.pth file) and the list of scene labels.
+    It provides one main function: .predict(frame)
     """
 
     def __init__(
@@ -181,22 +224,24 @@ class IndoorClassifier:
     ) -> None:
 
         # ------------------------------------------------------------
-        # Resolve paths via configs/project_paths.yaml
+        # Load the file paths from the config (where the .pth and labels are)
         # ------------------------------------------------------------
         try:
             paths = load_paths()
         except Exception as exc:
-            log.warning("Failed to load project paths; using defaults. %s", exc)
+            log.warning("Could not load paths; using default locations. %s", exc)
             paths = {}
 
         project_root = Path(__file__).resolve().parents[2]
 
+        # If no model path given → use default resnet_places365_best.pth
         if model_path is None:
             model_path = paths.get(
                 "indoor_classifier_model",
                 project_root / "models" / "indoor_classification" / "resnet_places365_best.pth",
             )
 
+        # If no label file given → use default Places365 label file
         if labels_path is None:
             labels_path = paths.get(
                 "places365_labels",
@@ -206,28 +251,31 @@ class IndoorClassifier:
         self.model_path = Path(model_path)
         self.labels_path = Path(labels_path)
 
+        # Make sure the .pth model file actually exists
         if not self.model_path.exists():
             raise FileNotFoundError(
-                f"Indoor classifier model missing:\n  {self.model_path}\n"
-                "Set paths.indoor_classifier_model in configs/project_paths.yaml "
-                "or place the model at the default location."
+                f"Indoor classifier model not found:\n  {self.model_path}\n"
+                "Fix the file path in project_paths.yaml or put the model here."
             )
 
         # ------------------------------------------------------------
-        # Device selection
+        # Choose device (GPU if available, otherwise CPU)
         # ------------------------------------------------------------
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
 
+        # If GPU requested but not available → use CPU
         if self.device.startswith("cuda") and not torch.cuda.is_available():
-            log.warning("CUDA requested but not available → falling back to CPU")
+            log.warning("CUDA not available; switching to CPU.")
             self.device = "cpu"
 
         # ------------------------------------------------------------
-        # Load Places365 labels
+        # Load the 365 Places365 class names from the text file
         # ------------------------------------------------------------
+        # These names will match the indexes the model predicts.
         self.places_class_names: List[str] = _load_places365_labels(self.labels_path)
+
         if len(self.places_class_names) != 365:
             log.warning(
                 "Expected 365 Places365 labels, got %d",
@@ -237,21 +285,25 @@ class IndoorClassifier:
         log.info("[IndoorClassifier] Loaded %d Places365 class names.", len(self.places_class_names))
 
         # ------------------------------------------------------------
-        # Build model + load weights
+        # Build the neural network + load the trained weights (.pth file)
         # ------------------------------------------------------------
-        log.info("[IndoorClassifier] Loading model weights from %s", self.model_path)
-
+        # 1. Create the model architecture (empty model, random weights)
         self.model = PlacesMITMultiHead(num_mit_classes=NUM_MIT_CLASSES)
 
+        # 2. Load the learned weights from the .pth file
+        #    This gives the model its "knowledge" to classify rooms.
         state = torch.load(str(self.model_path), map_location=self.device)
-        # strict=True because training script used same architecture
+
+        # 3. Insert the trained weights into the model
         self.model.load_state_dict(state, strict=True)
 
+        # Put the model on the selected device (CPU or GPU)
         self.model.to(self.device)
-        self.model.eval()
+        self.model.eval()  # Set to evaluation mode (no training)
 
         # ------------------------------------------------------------
-        # Input transform
+        # Define how images are preprocessed before entering the model
+        # (resize, crop, convert to tensor, normalize)
         # ------------------------------------------------------------
         self.transform = transforms.Compose(
             [
@@ -267,7 +319,9 @@ class IndoorClassifier:
 
         log.info("[IndoorClassifier] Ready on device=%s", self.device)
 
-        # Optional warm-up for smoother first run
+        # ------------------------------------------------------------
+        # Warm-up: run one dummy prediction so the model is ready instantly
+        # ------------------------------------------------------------
         if warmup:
             try:
                 dummy = np.zeros((224, 224, 3), dtype=np.uint8)
@@ -280,83 +334,114 @@ class IndoorClassifier:
     # ---------------------------------------------------------------
     def predict(self, frame: np.ndarray) -> IndoorClassificationResult:
         """
-        Predict indoor scene label with hybrid fusion:
+        This function looks at an image and decides:
+            → What room or environment the robot is currently in.
 
-            - If MIT is confident → trust MIT label
-            - Else → fall back to Places365 label
-            - Special cases (e.g., cafeteria) can override behavior
+        It uses ONE neural network with TWO "heads":
+            1. MIT head: predicts one of your 11 indoor room types.
+            2. Places365 head: predicts one of 365 general scene typ
+
+        We compare the two predictions and choose the best one.
+        This is called HYBRID FUSION.
+
+        Return value:
+            - The final room name (label)
+            - The confidence score
+            - All MIT class probabilities
+            - Extra debug info
         """
 
+        # Make sure we received a real image
         if frame is None or not isinstance(frame, np.ndarray):
             raise ValueError("Frame must be a valid numpy array")
         if frame.size == 0:
             raise ValueError("Empty frame passed to IndoorClassifier")
 
-        # BGR → RGB and to PIL
+        # ------------------------------------------------------------------
+        # STEP 1: Turn the image into the format the model expects.
+        # ------------------------------------------------------------------
+        # OpenCV uses BGR color format. We convert it to RGB.
         img = Image.fromarray(frame[:, :, ::-1])
 
-        # Preprocess
+        # Apply the same resizing and normalization used during training
         x = self.transform(img).unsqueeze(0).to(self.device)
 
-        # Forward pass
+        # ------------------------------------------------------------------
+        # STEP 2: Run the model (get predictions from both heads)
+        # ------------------------------------------------------------------
         with torch.no_grad():
+
+            # Do the call to self.model here #
             places_logits, mit_logits = self.model(x)
+
+            # Convert the outputs into probabilities (0–1)
             places_probs = F.softmax(places_logits, dim=1)[0]
             mit_probs = F.softmax(mit_logits, dim=1)[0]
 
-        # This where the classes name and confidance are slected **************
-        # *********************************************************************
-        # ---------------- MIT head (indoors, 11 classes) ----------------
+        # ------------------------------------------------------------------
+        # STEP 3: Find the BEST label from each head
+        # ------------------------------------------------------------------
+
+        # ---------------- MIT head (your 11 indoor classes) ----------------
+        # Pick the MIT label with the highest probability.
         mit_best_idx = int(torch.argmax(mit_probs))
         mit_best_label = MIT_CLASS_NAMES[mit_best_idx]
         mit_best_conf = float(mit_probs[mit_best_idx])
 
-        # ---------------- Places365 head (365 classes) ------------------
+        # ---------------- Places365 head (365 environment classes) --------
+        # Pick the Places label with the highest probability.
         places_best_idx = int(torch.argmax(places_probs))
         places_best_label = self.places_class_names[places_best_idx]
         places_best_conf = float(places_probs[places_best_idx])
 
-        # ---------------------------------------------------------------
-        # HYBRID FUSION RULES
-        # ---------------------------------------------------------------
-        # You can tune this threshold; keep 0.6 as in your Colab script.
-        MIT_PRIORITY_THRESHOLD = 0.60
+        # ------------------------------------------------------------------
+        # STEP 4: HYBRID FUSION
+        # Decide which label we will trust as the final answer.
+        # ------------------------------------------------------------------
 
-        # Example special case: cafeteria is often missed by MIT head
+        MIT_PRIORITY_THRESHOLD = 0.60  # MIT must be at least 60% confident
+
+        # Special rule:
+        # Places365 knows "cafeteria" but MIT does not.
+        # If Places365 says "cafeteria", we accept it immediately.
         if places_best_label == "cafeteria":
             final_label = places_best_label
             final_conf = places_best_conf
             source = "Places365"
 
-        # If MIT is confident, trust MIT
+        # If MIT is confident (>= 60%), we trust MIT.
         elif mit_best_conf >= MIT_PRIORITY_THRESHOLD:
             final_label = mit_best_label
             final_conf = mit_best_conf
             source = "MIT"
 
-        # Otherwise, trust Places365
+        # Otherwise, MIT is unsure → use the Places365 label.
         else:
             final_label = places_best_label
             final_conf = places_best_conf
             source = "Places365"
 
-        # ---------------------------------------------------------------
-        # Build probability dict (MIT only, for backward compatibility)
-        # ---------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # STEP 5: Build the output structure
+        # ------------------------------------------------------------------
+
+        # Create a dictionary of MIT class probabilities
+        # (this is useful for debugging and charts)
         mit_prob_dict: Dict[str, float] = {MIT_CLASS_NAMES[i]: float(mit_probs[i]) for i in range(NUM_MIT_CLASSES)}
 
-        # `raw` can carry any extra debug info without breaking callers
+        # Extra debug info: shows which model we trusted and why
         raw_info = {
             "source": source,
             "mit_best": {"label": mit_best_label, "conf": mit_best_conf},
             "places_best": {"label": places_best_label, "conf": places_best_conf},
         }
 
+        # Return everything to the rest of the system
         return IndoorClassificationResult(
-            label=final_label,
-            confidence=final_conf,
-            probs=mit_prob_dict,
-            raw=raw_info,
+            label=final_label,  # The final room/environment name
+            confidence=final_conf,  # How confident the model is
+            probs=mit_prob_dict,  # MIT probabilities (11 values)
+            raw=raw_info,  # Debug info (useful for logs)
         )
 
 

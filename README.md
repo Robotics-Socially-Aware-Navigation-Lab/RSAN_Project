@@ -76,7 +76,7 @@ This layered design mirrors how humans combine **sight, reasoning, and decision-
 |--------|------------------|----------|
 | Computer Vision | **YOLOv8 / OpenCV** | Object detection and real-time inference |
 | Dataset Management | **FiftyOne / Albumentations** | Data cleaning, augmentation, and visualization |
-| Reasoning | **ChatGPT-Vision / LangChain** | Semantic interpretation of detected scenes |
+| Reasoning | **ChatGPT-4 mini / LangChain** | Semantic interpretation of detected scenes |
 | Robotics | **ROS2 (Humble)** | Real-world control and sensor integration |
 | ML Workflow | **Python, PyTorch, Jupyter, Colab** | Model training and experimentation |
 
