@@ -570,7 +570,7 @@ class ObjectDetector:
                 # 🔍 Debug (optional): see what IDs/names are coming out
                 # logger.info("YOLO raw: id=%s name=%s conf=%.2f", class_id, class_name, conf)
 
-                # ✅ HARD FILTER BY NAME:
+                # HARD FILTER BY NAME:
                 # If it's not in ALLOWED_NAMES, drop it (this kills "bench").
                 if ALLOWED_NAMES and class_name not in ALLOWED_NAMES:
                     continue

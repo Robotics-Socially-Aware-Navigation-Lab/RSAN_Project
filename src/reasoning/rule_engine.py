@@ -27,5 +27,5 @@ def apply_rules(reasoning_text):
     else:
         action = "Stay idle"
 
-    logger.info(f"🤖 Rule-based Action: {action}")
+    logger.info(f"Rule-based Action: {action}")
     return action

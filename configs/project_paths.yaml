@@ -39,3 +39,8 @@ paths:
   # ----------------------
   configs: configs
   docs: docs
+
+
+  # ... your existing entries ...
+  indoor_classifier_model: models/indoor_classification/resnet_places365_best.pth
+  places365_labels: models/indoor_classification/categories_places365.txt

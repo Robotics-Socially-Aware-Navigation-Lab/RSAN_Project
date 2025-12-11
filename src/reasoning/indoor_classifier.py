@@ -1,204 +1,49 @@
-# """
-# Indoor classifier wrapper for RSAN Project.
-
-# This module loads the YOLOv8-CLS indoor scene classification model
-# (from models/indoor_classification/best.pt) and exposes a clean API
-# for predicting the room type for a given image frame.
-
-# Designed to be:
-# - Robust to missing models / bad frames
-# - Device-aware (GPU if available, else CPU)
-# - Easy to test and integrate into ROS/pipelines
-# """
-
-# from __future__ import annotations
-
-# from dataclasses import dataclass
-# from pathlib import Path
-# from typing import Any, Dict, Optional
-
-# import numpy as np
-# import torch
-# from ultralytics import YOLO
-
-# from src.utils.logger import get_logger
-
-# log = get_logger(__name__)
-
-
-# @dataclass
-# class IndoorClassificationResult:
-#     """Structured result returned by IndoorClassifier."""
-
-#     label: str
-#     confidence: float
-#     probs: Dict[str, float]
-#     raw: Any  # underlying ultralytics Result object
-
-
-# class IndoorClassifier:
-#     """
-#     High-level wrapper around a YOLOv8-CLS indoor classification model.
-
-#     - Automatically locates the model file at:
-#           models/indoor_classification/best.pt
-#       relative to the project root.
-#     - Automatically selects GPU if available, otherwise CPU.
-#     - Provides a simple .predict(frame) API for BGR numpy frames.
-#     """
-
-#     def __init__(
-#         self,
-#         model_path: Optional[Path | str] = None,
-#         device: Optional[str] = None,
-#         warmup: bool = True,
-#     ) -> None:
-#         # Resolve project root as repo root (two levels above this file)
-#         self._root = Path(__file__).resolve().parents[2]
-
-#         # Resolve model path
-#         if model_path is None:
-#             model_path = self._root / "models" / "indoor_classification" / "best.pt"
-#         self.model_path = Path(model_path)
-
-#         if not self.model_path.exists():
-#             raise FileNotFoundError(
-#                 f"Indoor classification model not found at: {self.model_path}\n"
-#                 "Make sure best.pt is saved under models/indoor_classification/best.pt"
-#             )
-
-#         # Device selection
-#         if device is not None:
-#             self.device = device
-#         else:
-#             self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-#         if self.device.startswith("cuda") and not torch.cuda.is_available():
-#             log.warning("CUDA requested but not available. Falling back to CPU.")
-#             self.device = "cpu"
-
-#         log.info(
-#             "Initializing IndoorClassifier with model=%s on device=%s",
-#             self.model_path,
-#             self.device,
-#         )
-
-#         # Load YOLOv8-CLS model
-#         self.model = YOLO(str(self.model_path))
-
-#         # Optional warm-up to avoid first-frame latency spikes
-#         if warmup:
-#             try:
-#                 dummy = np.zeros((224, 224, 3), dtype=np.uint8)
-#                 _ = self.model(dummy, device=self.device, verbose=False)
-#                 log.info("IndoorClassifier warm-up completed.")
-#             except Exception as exc:
-#                 log.warning("Warm-up failed: %s", exc)
-
-#     # ------------------------------------------------------------------ #
-#     # Public API
-#     # ------------------------------------------------------------------ #
-#     def predict(self, frame: np.ndarray) -> IndoorClassificationResult:
-#         """
-#         Predict the room category for a given frame.
-
-#         Parameters
-#         ----------
-#         frame : np.ndarray
-#             BGR image, e.g. from cv2.VideoCapture.read().
-
-#         Returns
-#         -------
-#         IndoorClassificationResult
-
-#         Raises
-#         ------
-#         ValueError if frame is invalid.
-#         RuntimeError if model inference fails.
-#         """
-#         if frame is None or not isinstance(frame, np.ndarray):
-#             raise ValueError("Frame must be a non-empty numpy array")
-#         if frame.size == 0:
-#             raise ValueError("Empty frame passed to IndoorClassifier.predict()")
-
-#         try:
-#             results = self.model(frame, device=self.device, verbose=False)[0]
-#         except Exception as exc:
-#             log.error("IndoorClassifier inference failed: %s", exc, exc_info=True)
-#             raise RuntimeError(f"IndoorClassifier inference failed: {exc}") from exc
-
-#         # Top-1 prediction
-#         top_idx = int(results.probs.top1)
-#         label = results.names[top_idx]
-#         confidence = float(results.probs.top1conf)
-
-#         # Full probability distribution
-#         probs = results.probs.data.float().cpu().numpy().tolist()
-#         prob_dict = {results.names[i]: float(p) for i, p in enumerate(probs)}
-
-#         return IndoorClassificationResult(
-#             label=label,
-#             confidence=confidence,
-#             probs=prob_dict,
-#             raw=results,
-#         )
-
-
-# # Singleton convenience
-# _classifier_singleton: Optional[IndoorClassifier] = None
-
-
-# def get_indoor_classifier() -> IndoorClassifier:
-#     """Get a singleton instance of IndoorClassifier (lazy-loaded)."""
-#     global _classifier_singleton
-#     if _classifier_singleton is None:
-#         _classifier_singleton = IndoorClassifier()
-#     return _classifier_singleton
-
-
-# def classify_room(frame: np.ndarray) -> IndoorClassificationResult:
-#     """
-#     Shortcut: classify a frame using the global IndoorClassifier singleton.
-#     """
-#     clf = get_indoor_classifier()
-#     return clf.predict(frame)
-
-
 """
-Indoor classifier wrapper for RSAN Project (MIT+Places365 multi-head).
+Indoor classifier wrapper for RSAN Project (MIT + Places365 multi-head, hybrid fusion).
 
-Loads your fine-tuned multi-head model:
+This classifier loads your fine-tuned model:
     resnet_places365_best.pth
 
-This .pth contains:
-    backbone.*          → ResNet50 features
-    places_head.*       → 365 Places365 classes
-    mit_head.*          → Your indoor classes (MIT classes)
+The model contains:
+    backbone.*      → ResNet50 feature extractor
+    places_head.*   → 365 Places365 logits
+    mit_head.*      → Your indoor MIT classes
 
-We use ONLY the MIT head for indoor classification in the RSAN pipeline.
+RSAN pipeline relies on:
+    • final_label (hybrid MIT + Places365)
+    • confidence
+    • probs over MIT classes (for compatibility)
+    • raw dict with extra debug info (MIT vs Places365)
+
+Config-driven paths:
+    configs/project_paths.yaml → paths.indoor_classifier_model
+                               → paths.places365_labels
+
+Author: RSAN_Project
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import models, transforms
 from PIL import Image
+from torchvision import models, transforms
 
+from src.utils.file_utils import load_paths
 from src.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-
-# --------------------------------------------------------------
-# MIT class list — MUST match your fine-tuned model order
-# --------------------------------------------------------------
+# ================================================================
+# MIT INDOOR CLASS LABELS
+# MUST match EXACT order used during fine-tuning
+# ================================================================
 MIT_CLASS_NAMES: List[str] = [
     "bathroom",
     "bedroom",
@@ -215,46 +60,44 @@ MIT_CLASS_NAMES: List[str] = [
 NUM_MIT_CLASSES = len(MIT_CLASS_NAMES)
 
 
-# --------------------------------------------------------------
-# Return structure for RSAN
-# --------------------------------------------------------------
+# ================================================================
+# RSAN RETURN STRUCTURE (unchanged interface)
+# ================================================================
 @dataclass
 class IndoorClassificationResult:
     label: str
     confidence: float
     probs: Dict[str, float]
-    raw: Any  # raw logits
+    raw: Any  # extra info (e.g., logits, MIT vs Places365, source)
 
 
-# --------------------------------------------------------------
-# The EXACT multi-head architecture your .pth requires
-# --------------------------------------------------------------
+# ================================================================
+# MULTI-HEAD RESNET ARCHITECTURE
+# MUST MATCH TRAINING NOTEBOOK
+# ================================================================
 class PlacesMITMultiHead(nn.Module):
     """
-    Multi-head ResNet50 model:
+    Multi-head ResNet50 architecture:
 
-       backbone → ResNet50 (features only)
-       places_head → 365 classes
-       mit_head → NUM_MIT_CLASSES indoor classes
-
-    This architecture matches the one used to train:
-       resnet_places365_best.pth
+        backbone     → ResNet50 feature extractor
+        places_head  → 365-way Places365 classifier
+        mit_head     → fine-tuned MIT indoor classifier
     """
 
     def __init__(self, num_mit_classes: int):
         super().__init__()
 
-        # Base ResNet50 (same as notebook)
+        # ResNet50 configured for 365 Places classes
         self.backbone = models.resnet50(num_classes=365)
         in_features = self.backbone.fc.in_features
 
-        # Replace classifier with identity → output feature vector
+        # Replace final layer with Identity → feature vector
         self.backbone.fc = nn.Identity()
 
-        # Original Places365 head (365-way)
+        # Places365 head (kept for hybrid fusion)
         self.places_head = nn.Linear(in_features, 365)
 
-        # Fine-tuned MIT indoor head
+        # MIT indoor head (fine-tuned)
         self.mit_head = nn.Linear(in_features, num_mit_classes)
 
     def forward(self, x):
@@ -264,61 +107,152 @@ class PlacesMITMultiHead(nn.Module):
         return places_logits, mit_logits
 
 
-# --------------------------------------------------------------
-# MAIN CLASSIFIER WRAPPER USED BY RSAN
-# --------------------------------------------------------------
+# ================================================================
+# Helper: load Places365 label names from categories_places365.txt
+# ================================================================
+def _load_places365_labels(path: Path) -> List[str]:
+    """
+    Expected file format (standard Places365):
+
+        /a/abbey 0
+        /b/bowling_alley 1
+        ...
+
+    We keep only the human-readable name (last part after '/').
+    """
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Places365 label file not found at:\n  {path}\n" "Make sure categories_places365.txt is placed there."
+        )
+
+    num_classes = 365
+    classes: List[Optional[str]] = [None] * num_classes
+
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+
+            category_full = parts[0]  # e.g. '/a/abbey'
+            try:
+                cls_id = int(parts[-1])  # final token is the ID
+            except ValueError:
+                continue
+
+            name = category_full.split("/")[-1]  # '/a/abbey' → 'abbey'
+
+            if 0 <= cls_id < num_classes:
+                classes[cls_id] = name
+
+    # Fill any missing class names
+    for i in range(num_classes):
+        if classes[i] is None:
+            classes[i] = f"class_{i}"
+
+    return [str(c) for c in classes]
+
+
+# ================================================================
+# MAIN CLASSIFIER WRAPPER USED BY THE RSAN PIPELINE
+# ================================================================
 class IndoorClassifier:
     """
-    Loads the multi-head model resnet_places365_best.pth
-    and exposes simple .predict(frame) interface.
+    Hybrid MIT + Places365 indoor scene classifier.
+
+    Loads:
+        - model weights from project_paths.yaml → paths.indoor_classifier_model
+        - Places365 label file from paths.places365_labels
+
+    Exposes:
+        .predict(frame: np.ndarray) → IndoorClassificationResult
     """
 
     def __init__(
         self,
         model_path: Optional[str | Path] = None,
+        labels_path: Optional[str | Path] = None,
         device: Optional[str] = None,
         warmup: bool = True,
     ) -> None:
 
-        # Resolve project root
-        self._root = Path(__file__).resolve().parents[2]
+        # ------------------------------------------------------------
+        # Resolve paths via configs/project_paths.yaml
+        # ------------------------------------------------------------
+        try:
+            paths = load_paths()
+        except Exception as exc:
+            log.warning("Failed to load project paths; using defaults. %s", exc)
+            paths = {}
 
-        # DEFAULT MODEL PATH
+        project_root = Path(__file__).resolve().parents[2]
+
         if model_path is None:
-            model_path = self._root / "models" / "indoor_classification" / "resnet_places365_best.pth"
+            model_path = paths.get(
+                "indoor_classifier_model",
+                project_root / "models" / "indoor_classification" / "resnet_places365_best.pth",
+            )
+
+        if labels_path is None:
+            labels_path = paths.get(
+                "places365_labels",
+                project_root / "models" / "indoor_classification" / "categories_places365.txt",
+            )
 
         self.model_path = Path(model_path)
+        self.labels_path = Path(labels_path)
 
         if not self.model_path.exists():
             raise FileNotFoundError(
-                f"Indoor classifier model not found: {self.model_path}\n"
-                "Expected: RSAN_Project/models/indoor_classification/resnet_places365_best.pth"
+                f"Indoor classifier model missing:\n  {self.model_path}\n"
+                "Set paths.indoor_classifier_model in configs/project_paths.yaml "
+                "or place the model at the default location."
             )
 
-        # Select device
+        # ------------------------------------------------------------
+        # Device selection
+        # ------------------------------------------------------------
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
 
         if self.device.startswith("cuda") and not torch.cuda.is_available():
-            log.warning("CUDA requested but not available — using CPU")
+            log.warning("CUDA requested but not available → falling back to CPU")
             self.device = "cpu"
 
-        log.info(f"Loading IndoorClassifier model: {self.model_path} on device {self.device}")
+        # ------------------------------------------------------------
+        # Load Places365 labels
+        # ------------------------------------------------------------
+        self.places_class_names: List[str] = _load_places365_labels(self.labels_path)
+        if len(self.places_class_names) != 365:
+            log.warning(
+                "Expected 365 Places365 labels, got %d",
+                len(self.places_class_names),
+            )
 
-        # Build architecture
+        log.info("[IndoorClassifier] Loaded %d Places365 class names.", len(self.places_class_names))
+
+        # ------------------------------------------------------------
+        # Build model + load weights
+        # ------------------------------------------------------------
+        log.info("[IndoorClassifier] Loading model weights from %s", self.model_path)
+
         self.model = PlacesMITMultiHead(num_mit_classes=NUM_MIT_CLASSES)
 
-        # Load fine-tuned weights
         state = torch.load(str(self.model_path), map_location=self.device)
-        self.model.load_state_dict(state)
+        # strict=True because training script used same architecture
+        self.model.load_state_dict(state, strict=True)
 
         self.model.to(self.device)
         self.model.eval()
 
-        log.info("IndoorClassifier ready.")
-
-        # Transform (same as notebook)
+        # ------------------------------------------------------------
+        # Input transform
+        # ------------------------------------------------------------
         self.transform = transforms.Compose(
             [
                 transforms.Resize(256),
@@ -331,25 +265,34 @@ class IndoorClassifier:
             ]
         )
 
+        log.info("[IndoorClassifier] Ready on device=%s", self.device)
+
+        # Optional warm-up for smoother first run
         if warmup:
             try:
                 dummy = np.zeros((224, 224, 3), dtype=np.uint8)
                 _ = self.predict(dummy)
-                log.info("IndoorClassifier warm-up completed.")
             except Exception as exc:
-                log.warning(f"Warm-up failed: {exc}")
+                log.warning("Warm-up failed: %s", exc)
 
-    # ----------------------------------------------------------
-    # MAIN PREDICT METHOD (Used by Unified Pipeline)
-    # ----------------------------------------------------------
+    # ---------------------------------------------------------------
+    # PREDICTION (Hybrid MIT + Places365)
+    # ---------------------------------------------------------------
     def predict(self, frame: np.ndarray) -> IndoorClassificationResult:
+        """
+        Predict indoor scene label with hybrid fusion:
+
+            - If MIT is confident → trust MIT label
+            - Else → fall back to Places365 label
+            - Special cases (e.g., cafeteria) can override behavior
+        """
 
         if frame is None or not isinstance(frame, np.ndarray):
-            raise ValueError("Frame must be a non-empty numpy array")
+            raise ValueError("Frame must be a valid numpy array")
         if frame.size == 0:
-            raise ValueError("Empty frame received")
+            raise ValueError("Empty frame passed to IndoorClassifier")
 
-        # BGR → RGB → PIL image
+        # BGR → RGB and to PIL
         img = Image.fromarray(frame[:, :, ::-1])
 
         # Preprocess
@@ -357,28 +300,69 @@ class IndoorClassifier:
 
         # Forward pass
         with torch.no_grad():
-            _, mit_logits = self.model(x)
+            places_logits, mit_logits = self.model(x)
+            places_probs = F.softmax(places_logits, dim=1)[0]
             mit_probs = F.softmax(mit_logits, dim=1)[0]
 
-        # Top prediction
-        top_idx = int(torch.argmax(mit_probs))
-        label = MIT_CLASS_NAMES[top_idx]
-        confidence = float(mit_probs[top_idx])
+        # This where the classes name and confidance are slected **************
+        # *********************************************************************
+        # ---------------- MIT head (indoors, 11 classes) ----------------
+        mit_best_idx = int(torch.argmax(mit_probs))
+        mit_best_label = MIT_CLASS_NAMES[mit_best_idx]
+        mit_best_conf = float(mit_probs[mit_best_idx])
 
-        # Probability dict
-        probs = {MIT_CLASS_NAMES[i]: float(mit_probs[i]) for i in range(NUM_MIT_CLASSES)}
+        # ---------------- Places365 head (365 classes) ------------------
+        places_best_idx = int(torch.argmax(places_probs))
+        places_best_label = self.places_class_names[places_best_idx]
+        places_best_conf = float(places_probs[places_best_idx])
+
+        # ---------------------------------------------------------------
+        # HYBRID FUSION RULES
+        # ---------------------------------------------------------------
+        # You can tune this threshold; keep 0.6 as in your Colab script.
+        MIT_PRIORITY_THRESHOLD = 0.60
+
+        # Example special case: cafeteria is often missed by MIT head
+        if places_best_label == "cafeteria":
+            final_label = places_best_label
+            final_conf = places_best_conf
+            source = "Places365"
+
+        # If MIT is confident, trust MIT
+        elif mit_best_conf >= MIT_PRIORITY_THRESHOLD:
+            final_label = mit_best_label
+            final_conf = mit_best_conf
+            source = "MIT"
+
+        # Otherwise, trust Places365
+        else:
+            final_label = places_best_label
+            final_conf = places_best_conf
+            source = "Places365"
+
+        # ---------------------------------------------------------------
+        # Build probability dict (MIT only, for backward compatibility)
+        # ---------------------------------------------------------------
+        mit_prob_dict: Dict[str, float] = {MIT_CLASS_NAMES[i]: float(mit_probs[i]) for i in range(NUM_MIT_CLASSES)}
+
+        # `raw` can carry any extra debug info without breaking callers
+        raw_info = {
+            "source": source,
+            "mit_best": {"label": mit_best_label, "conf": mit_best_conf},
+            "places_best": {"label": places_best_label, "conf": places_best_conf},
+        }
 
         return IndoorClassificationResult(
-            label=label,
-            confidence=confidence,
-            probs=probs,
-            raw=mit_logits.cpu().numpy(),
+            label=final_label,
+            confidence=final_conf,
+            probs=mit_prob_dict,
+            raw=raw_info,
         )
 
 
-# --------------------------------------------------------------
-# Singleton helpers (RSAN expects these)
-# --------------------------------------------------------------
+# ================================================================
+# Singleton Interface (RSAN expects these names)
+# ================================================================
 _classifier_singleton: Optional[IndoorClassifier] = None
 
 
@@ -390,5 +374,4 @@ def get_indoor_classifier() -> IndoorClassifier:
 
 
 def classify_room(frame: np.ndarray) -> IndoorClassificationResult:
-    clf = get_indoor_classifier()
-    return clf.predict(frame)
+    return get_indoor_classifier().predict(frame)
