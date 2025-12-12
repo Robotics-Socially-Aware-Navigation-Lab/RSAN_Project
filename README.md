@@ -1,6 +1,7 @@
 # Welcome to the Robotics Socially Aware Navigation Lab (RSAN Lab)
 
-This group was founded to advance research in **socially aware robotic perception**, combining **computer vision**, **indoor scene understanding**, and **AI reasoning** to help robots behave intelligently in human environments.
+This group was founded to advance research in **socially aware robotic perception**, combining **computer vision**, **indoor scene understanding**, 
+and **AI reasoning** to help robots behave intelligently in human environments.
 
 The **RSAN_Project** was developed for **CS470: Advanced Software Design Project** at **Sonoma State University**.  
 It integrates **YOLOv8 indoor object detection**, **indoor scene classification**, **hybrid fusion**, and **LLM reasoning**, producing a unified perception pipeline capable of interpreting complex indoor spaces.
@@ -208,29 +209,99 @@ cd RSAN_Project
 setup.bat
 call conda activate rsan_env
 
-## Running & Testing RSAN
+
+### Running & Testing RSAN
+> Run all commands from the project root (`RSAN_Project`).
+> Paths can be **relative** or **absolute**.
+
 conda activate rsan_env
 
+
 ## YOLOv8 Object Detection
-python test_detection.py
-python test_detect_any.py image.jpg
-python test_detect_any.py video.mp4
+
+# Single Image
+python test_detection.py path/to/image.jpg
+
+# Example
+python test_detection.py data/images/room.jpg
+
+# Single Image (Generic Detector)
+python test_detect_any.py path/to/image.jpg
+
+# Example
+python test_detect_any.py data/images/office.jpg
+
+# Video
+python test_detect_any.py path/to/video.mp4
+
+# Example
+python test_detect_any.py data/videos/indoor_scene.mp4
+
+# Webcam
 python test_detect_any.py webcam
 
-## Indoor Scene Classification (ResNet-MIT-Places365)
-python -m src.tools.run_scene_classification photo.jpg --out-dir outputs/classification
-python -m src.tools.run_scene_classification images_folder/
+---
 
-## Outputs saved to:
+## Indoor Scene Classification (ResNet-MIT-Places365)
+
+# Single Image
+python -m src.tools.run_scene_classification path/to/image.jpg --out-dir outputs/classification
+
+# Example
+python -m src.tools.run_scene_classification data/images/classroom.jpg --out-dir outputs/classification
+
+# Folder of Images
+python -m src.tools.run_scene_classification path/to/images_folder/
+
+# Example
+python -m src.tools.run_scene_classification data/images/
+
+# Outputs saved to:
 outputs/classification/images/
 outputs/classification/results.json
 
+---
+
 ## Full Unified Perception Pipeline
-python -m src.tools.run_unified_pipeline image.jpg
-python -m src.tools.run_unified_pipeline video.mp4
+
+# Single Image
+python -m src.tools.run_unified_pipeline path/to/image.jpg
+
+# Example
+python -m src.tools.run_unified_pipeline data/images/room.jpg
+
+---
+
+# Folder of Images
+python -m src.tools.run_unified_pipeline path/to/images_folder/
+
+# Example
+python -m src.tools.run_unified_pipeline data/images/
+
+---
+
+# Single Video
+python -m src.tools.run_unified_pipeline path/to/video.mp4
+
+# Example
+python -m src.tools.run_unified_pipeline data/videos/indoor_scene.mp4
+
+---
+
+# Folder of Videos
+python -m src.tools.run_unified_pipeline path/to/videos_folder/
+
+# Example
+python -m src.tools.run_unified_pipeline data/videos/
+
+---
+
+# Webcam
 python -m src.tools.run_unified_pipeline webcam
 
-## Outputs saved to:
+---
+
+# Outputs saved to:
 outputs/full_pipeline/images/
 outputs/full_pipeline/videos/
 outputs/full_pipeline/logs/results.json
