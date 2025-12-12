@@ -453,28 +453,7 @@ KEEP_IDS = [
 
 # ✅ This is the *hard* gate: ONLY these class names are allowed to appear.
 # Remove or add as needed for RSAN.
-ALLOWED_NAMES = {
-    "person",
-    "chair",
-    "tv",
-    "monitor",
-    "laptop",
-    "book",
-    "cell phone",
-    "backpack",
-    "handbag",
-    "keyboard",
-    "mouse",
-    "desk",
-    "table",
-    "dining table",
-    "couch",
-    "sofa",
-    "door",
-    # add any additional labels you *do* want
-}
 
-# Anything *not* in ALLOWED_NAMES will be dropped, including "bench".
 
 
 # ------------------------------------------------------------
@@ -510,7 +489,7 @@ class ObjectDetector:
     def __init__(
         self,
         model_path: Optional[Path] = None,
-        conf_threshold: float = 0.3,
+        conf_threshold: float = 0.25,
         iou_threshold: float = 0.5,
         device: Optional[str] = None,
     ) -> None:
@@ -570,10 +549,7 @@ class ObjectDetector:
                 # 🔍 Debug (optional): see what IDs/names are coming out
                 # logger.info("YOLO raw: id=%s name=%s conf=%.2f", class_id, class_name, conf)
 
-                # HARD FILTER BY NAME:
-                # If it's not in ALLOWED_NAMES, drop it (this kills "bench").
-                if ALLOWED_NAMES and class_name not in ALLOWED_NAMES:
-                    continue
+
 
                 detections.append(
                     Detection(
