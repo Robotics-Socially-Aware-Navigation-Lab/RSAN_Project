@@ -1,30 +1,3 @@
-# import yaml, os, json
-# from pathlib import Path
-
-# def load_yaml(yaml_path):
-#     """Load any YAML configuration file."""
-#     with open(yaml_path, 'r') as f:
-#         return yaml.safe_load(f)
-
-# def load_paths(config_path='configs/project_paths.yaml'):
-#     """Load project paths as a dictionary."""
-#     cfg = load_yaml(config_path)
-#     return {k: Path(v) for k, v in cfg['paths'].items()}
-
-# def ensure_dirs(paths):
-#     """Ensure all critical directories exist."""
-#     for p in paths.values():
-#         os.makedirs(p, exist_ok=True)
-
-# def save_json(data, path):
-#     """Save Python dict as JSON."""
-#     with open(path, 'w') as f:
-#         json.dump(data, f, indent=4)
-
-# def load_json(path):
-#     """Load JSON data."""
-#     with open(path, 'r') as f:
-#         return json.load(f)
 
 """
 file_utils.py
