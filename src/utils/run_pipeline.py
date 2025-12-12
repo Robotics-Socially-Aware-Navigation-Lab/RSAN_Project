@@ -25,6 +25,7 @@ from ultralytics import YOLO
 from src.reasoning.indoor_classifier import IndoorClassifier
 from src.reasoning.scene_context import reason_about_scene
 from src.utils.logger import get_logger
+from src.perception.detector_config import KEEP_IDS
 
 log = get_logger(__name__)
 
@@ -119,7 +120,7 @@ def run_pipeline(
 
             # 1) Object detection
             try:
-                det_results = detector(frame)[0]
+                det_results = detector(frame, classes=KEEP_IDS)[0]
             except Exception as exc:
                 log.error("Detector inference failed: %s", exc, exc_info=True)
                 continue
