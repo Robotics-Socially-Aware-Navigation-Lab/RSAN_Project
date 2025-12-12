@@ -1,34 +1,3 @@
-# """
-# Handles dataset cleaning, filtering, and augmentation using FiftyOne.
-# """
-# from utils.file_utils import load_paths, ensure_dirs
-# from utils.logger import setup_logger
-# from pathlib import Path
-# import shutil
-
-# def preprocess_dataset():
-#     paths = load_paths()
-#     ensure_dirs(paths)
-#     logger = setup_logger(name="preprocess_data")
-
-#     logger.info("Starting dataset preprocessing...")
-#     raw_path = paths["raw_data"]
-#     processed_path = paths["processed_data"]
-#     yolo_path = paths["yolo_ready"]
-
-#     # Placeholder logic: In real code, use FiftyOne or Albumentations for filtering
-#     logger.info(f"Reading data from {raw_path}")
-#     logger.info(f"Exporting YOLO-ready data to {yolo_path}")
-
-#     # Example: copy processed data
-#     for p in Path(raw_path).glob("*.jpg"):
-#         shutil.copy(p, yolo_path / "images/train")
-
-#     logger.info("Preprocessing complete.")
-
-# if __name__ == "__main__":
-#     preprocess_dataset()
-
 """
 preprocess_data.py
 Purpose:
