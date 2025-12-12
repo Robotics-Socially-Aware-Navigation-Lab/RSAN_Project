@@ -1,4 +1,3 @@
-
 """
 Simple logging utility for the RSAN Project.
 

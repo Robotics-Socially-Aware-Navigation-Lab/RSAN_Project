@@ -1,4 +1,3 @@
-
 """
 src/perception/detect_objects.py
 
